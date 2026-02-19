@@ -4,6 +4,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiTags,
 } from '@nestjs/swagger';
 import { CreateUserUseCase } from 'src/domain/use-cases/create-user.use-case';
 import { CreateUserDTO } from '../dtos/create-user.dto';
@@ -25,6 +26,7 @@ interface Output {
   createdAt: Date;
 }
 
+@ApiTags('Users')
 @Controller('users')
 export class CreateUserController {
   constructor(private readonly createUserUseCase: CreateUserUseCase) {}

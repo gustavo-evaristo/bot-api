@@ -53,8 +53,8 @@ export class Password {
   /**
    * Compara senha enviada com hash existente
    */
-  public compare(hashedPassword: string): boolean {
-    return bcrypt.compareSync(this._value, hashedPassword);
+  public compareWithHash(hash: string): boolean {
+    return bcrypt.compareSync(this._value, hash);
   }
 
   /**
@@ -70,5 +70,9 @@ export class Password {
     if (!this.SPECIAL_CHAR_REGEX.test(password)) {
       throw new Error('Password must contain at least one special character');
     }
+  }
+
+  get value(): string {
+    return this._value;
   }
 }
