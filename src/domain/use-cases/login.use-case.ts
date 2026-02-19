@@ -2,12 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { Password } from '../entities/vos';
 import { IUserRepository } from '../repositories/user.repository';
 import { UserEntity } from '../entities/user.entity';
+import { JwtService } from '@nestjs/jwt';
+
+interface Output {
+  user: UserEntity;
+  token: string;
+}
 
 @Injectable()
 export class LoginUseCase {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  async execute({ email, password }): Promise<UserEntity> {
+  async execute({ email, password }): Promise<Output> {
     const user = await this.userRepository.findByEmail(email);
 
     if (!user) {
@@ -22,6 +31,10 @@ export class LoginUseCase {
       throw new Error('Invalid password');
     }
 
-    return user;
+    const payload = { id: user.id.toString() };
+
+    const token = this.jwtService.sign(payload);
+
+    return { user, token };
   }
 }

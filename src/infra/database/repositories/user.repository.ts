@@ -1,4 +1,7 @@
-import { IUserRepository } from 'src/domain/repositories/user.repository';
+import {
+  FindByEmailOrPhoneInput,
+  IUserRepository,
+} from 'src/domain/repositories/user.repository';
 import { PrismaService } from '../prisma.service';
 import { Injectable } from '@nestjs/common';
 import { UserEntity } from 'src/domain/entities/user.entity';
@@ -19,7 +22,9 @@ export class UserRepository implements IUserRepository {
   }
 
   async get(id: string): Promise<UserEntity | null> {
-    const user = await this.prismaService.users.findUnique({ where: { id } });
+    const user = await this.prismaService.users.findUnique({
+      where: { id, isActive: true },
+    });
 
     if (!user) {
       return null;
@@ -34,7 +39,7 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<UserEntity | null> {
     const user = await this.prismaService.users.findUnique({
-      where: { email },
+      where: { email, isActive: true },
     });
 
     if (!user) {
@@ -48,10 +53,14 @@ export class UserRepository implements IUserRepository {
     });
   }
 
-  async findByEmailOrPhone(emailOrPhone: string): Promise<UserEntity | null> {
+  async findByEmailOrPhone({
+    email,
+    phone,
+  }: FindByEmailOrPhoneInput): Promise<UserEntity | null> {
     const user = await this.prismaService.users.findFirst({
       where: {
-        OR: [{ email: emailOrPhone }, { phone: emailOrPhone }],
+        isActive: true,
+        OR: [{ email }, { phone }],
       },
     });
 

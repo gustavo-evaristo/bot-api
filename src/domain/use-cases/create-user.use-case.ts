@@ -27,7 +27,10 @@ export class CreateUserUseCase {
       confirmPassword,
     );
 
-    const userExists = await this.userRepository.findByEmailOrPhone(email);
+    const userExists = await this.userRepository.findByEmailOrPhone({
+      email,
+      phone,
+    });
 
     if (userExists) {
       throw new Error('User already exists');
