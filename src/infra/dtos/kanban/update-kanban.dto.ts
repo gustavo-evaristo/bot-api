@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { randomUUID } from 'node:crypto';
 
-export class UpdateKanbamDTO {
+export class UpdateKanbanDTO {
   @IsString()
   @IsNotEmpty()
   @IsUUID()
@@ -11,12 +11,12 @@ export class UpdateKanbamDTO {
 
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ example: 'Meu Kanbam' })
+  @ApiProperty({ example: 'Meu Kanban' })
   title: string;
 
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ example: 'Descrição do meu Kanbam' })
+  @ApiProperty({ example: 'Descrição do meu Kanban' })
   description: string;
 
   @IsString()

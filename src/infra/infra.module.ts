@@ -3,15 +3,17 @@ import {
   CreateUserController,
   GetProfileController,
   LoginController,
-  UpdateKanbamController,
-  CreateKanbamController,
+  UpdateKanbanController,
+  CreateKanbanController,
+  ListKanbansController,
 } from './controllers';
 import {
   CreateUserUseCase,
   LoginUseCase,
   GetProfileUseCase,
-  CreateKanbamUseCase,
-  UpdateKanbamUseCase,
+  CreateKanbanUseCase,
+  UpdateKanbanUseCase,
+  ListKanbansUseCase,
 } from 'src/domain/use-cases';
 import { DatabaseModule } from './database/database.module';
 import { AuthenticationModule } from './authentication/authentication.module';
@@ -23,15 +25,17 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     CreateUserController,
     LoginController,
     GetProfileController,
-    CreateKanbamController,
-    UpdateKanbamController,
+    CreateKanbanController,
+    UpdateKanbanController,
+    ListKanbansController,
   ],
   providers: [
     CreateUserUseCase,
     LoginUseCase,
     GetProfileUseCase,
-    CreateKanbamUseCase,
-    UpdateKanbamUseCase,
+    CreateKanbanUseCase,
+    UpdateKanbanUseCase,
+    ListKanbansUseCase,
   ],
 })
 export class InfraModule {}

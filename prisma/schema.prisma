@@ -22,10 +22,10 @@ model users {
   password  String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  kanbams   kanbams[]
+  kanbans   kanbans[]
 }
 
-model kanbams {
+model kanbans {
   id          String   @id @default(uuid())
   userId      String
   user        users    @relation(fields: [userId], references: [id])

@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { UserRepository } from './repositories/user.repository';
 import { IUserRepository } from 'src/domain/repositories/user.repository';
 import { PrismaService } from './prisma.service';
-import { IKanbamRepository } from 'src/domain/repositories';
-import { KanbamRepository } from './repositories/kanbam.repository';
+import { IKanbanRepository } from 'src/domain/repositories';
+import { KanbanRepository } from './repositories/kanban.repository';
 
 @Module({
   providers: [
@@ -13,10 +13,10 @@ import { KanbamRepository } from './repositories/kanbam.repository';
       useClass: UserRepository,
     },
     {
-      provide: IKanbamRepository,
-      useClass: KanbamRepository,
+      provide: IKanbanRepository,
+      useClass: KanbanRepository,
     },
   ],
-  exports: [IUserRepository, IKanbamRepository],
+  exports: [IUserRepository, IKanbanRepository],
 })
 export class DatabaseModule {}

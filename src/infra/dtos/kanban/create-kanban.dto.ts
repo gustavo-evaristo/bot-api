@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class CreateKanbamDTO {
+export class CreateKanbanDTO {
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ example: 'Meu Kanbam' })
+  @ApiProperty({ example: 'Meu Kanban' })
   title: string;
 
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ example: 'Descrição do meu Kanbam' })
+  @ApiProperty({ example: 'Descrição do meu Kanban' })
   description: string;
 }

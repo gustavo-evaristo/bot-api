@@ -1,6 +1,6 @@
 import { UUID } from './vos';
 
-interface KanbamEntityProps {
+interface KanbanEntityProps {
   id?: string | UUID | null;
   isActive?: boolean | null;
   isDeleted?: boolean | null;
@@ -13,13 +13,13 @@ interface KanbamEntityProps {
   updatedAt?: Date | null;
 }
 
-interface UpdateKanbamEntityProps {
+interface UpdateKanbanEntityProps {
   title: string;
   description: string;
   imageUrl: string | null;
 }
 
-export class KanbamEntity {
+export class KanbanEntity {
   id: UUID;
   userId: UUID;
   isActive: boolean;
@@ -31,7 +31,7 @@ export class KanbamEntity {
   createdAt: Date;
   updatedAt: Date;
 
-  constructor(props: KanbamEntityProps) {
+  constructor(props: KanbanEntityProps) {
     if (props.id instanceof UUID) {
       this.id = props.id;
     } else if (typeof props.id === 'string') {
@@ -65,7 +65,7 @@ export class KanbamEntity {
 
   active() {
     if (!this.phoneNumber) {
-      throw new Error('Phone number is required to activate the kanbam');
+      throw new Error('Phone number is required to activate the kanban');
     }
 
     this.isActive = true;
@@ -81,7 +81,7 @@ export class KanbamEntity {
     return this.userId.equals(userId);
   }
 
-  update({ title, description, imageUrl }: UpdateKanbamEntityProps) {
+  update({ title, description, imageUrl }: UpdateKanbanEntityProps) {
     this.title = title;
     this.description = description;
     this.imageUrl = imageUrl;
@@ -101,8 +101,8 @@ export class KanbamEntity {
     this.touch();
   }
 
-  duplicate(): KanbamEntity {
-    return new KanbamEntity({
+  duplicate(): KanbanEntity {
+    return new KanbanEntity({
       userId: this.userId,
       title: this.title,
       description: this.description,

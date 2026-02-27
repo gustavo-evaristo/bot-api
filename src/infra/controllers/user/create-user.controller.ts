@@ -2,29 +2,12 @@ import { Body, Controller, Post } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateUserUseCase } from 'src/domain/use-cases/user/create-user.use-case';
 import { CreateUserDTO } from '../../dtos/user/create-user.dto';
 import { CreateUserResponse } from '../../responses/user/create-user.response';
-
-interface Input {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-}
-
-interface Output {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  createdAt: Date;
-}
 
 @ApiTags('Users')
 @Controller('users')
@@ -35,7 +18,7 @@ export class CreateUserController {
   @ApiOperation({ summary: 'Create a new user' })
   @ApiBody({ type: CreateUserDTO })
   @ApiCreatedResponse({ type: CreateUserResponse })
-  async execute(@Body() body: CreateUserDTO): Promise<Output> {
+  async execute(@Body() body: CreateUserDTO) {
     const user = await this.createUserUseCase.execute(body);
 
     return {
