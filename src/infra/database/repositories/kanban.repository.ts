@@ -21,7 +21,7 @@ export class KanbanRepository implements IKanbanRepository {
 
   async get(id: string): Promise<KanbanEntity | null> {
     const kanban = await this.prismaService.kanbans.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
 
     if (!kanban) {

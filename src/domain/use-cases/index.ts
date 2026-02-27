@@ -6,6 +6,7 @@ export * from './kanban/delete-kanban.use-case';
 export * from './kanban/duplicate-kanban.use-case';
 export * from './kanban/desactive-kanban.use-case';
 export * from './kanban/list-kanbans.use-case';
+export * from './kanban/get-kanban.use-case';
 export * from './user/create-user.use-case';
 export * from './user/get-profile.use-case';
 export * from './user/login.use-case';

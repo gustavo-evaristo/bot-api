@@ -6,6 +6,7 @@ import {
   UpdateKanbanController,
   CreateKanbanController,
   ListKanbansController,
+  GetKanbanController,
 } from './controllers';
 import {
   CreateUserUseCase,
@@ -14,6 +15,7 @@ import {
   CreateKanbanUseCase,
   UpdateKanbanUseCase,
   ListKanbansUseCase,
+  GetKanbanUseCase,
 } from 'src/domain/use-cases';
 import { DatabaseModule } from './database/database.module';
 import { AuthenticationModule } from './authentication/authentication.module';
@@ -28,6 +30,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     CreateKanbanController,
     UpdateKanbanController,
     ListKanbansController,
+    GetKanbanController,
   ],
   providers: [
     CreateUserUseCase,
@@ -36,6 +39,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     CreateKanbanUseCase,
     UpdateKanbanUseCase,
     ListKanbansUseCase,
+    GetKanbanUseCase,
   ],
 })
 export class InfraModule {}
