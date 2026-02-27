@@ -14,12 +14,27 @@ datasource db {
 }
 
 model users {
-  id        String   @id @default(uuid())
-  isActive  Boolean  @default(true)
+  id        String    @id @default(uuid())
+  isActive  Boolean   @default(true)
   name      String
-  email     String   @unique
-  phone     String   @unique
+  email     String    @unique
+  phone     String    @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  kanbams   kanbams[]
+}
+
+model kanbams {
+  id          String   @id @default(uuid())
+  userId      String
+  user        users    @relation(fields: [userId], references: [id])
+  isActive    Boolean  @default(true)
+  isDeleted   Boolean  @default(false)
+  title       String
+  description String
+  imageUrl    String?
+  phoneNumber String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

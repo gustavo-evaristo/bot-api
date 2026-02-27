@@ -1,7 +1,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { GetProfileUseCase } from 'src/domain/use-cases/get-profile.use-case';
-import { JwtGuard } from '../authentication/jwt.guard';
+import { GetProfileUseCase } from 'src/domain/use-cases';
+import { JwtGuard } from '../../authentication/jwt.guard';
 
 @ApiTags('Users')
 @Controller('users')

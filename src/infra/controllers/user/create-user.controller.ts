@@ -6,9 +6,9 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateUserUseCase } from 'src/domain/use-cases/create-user.use-case';
-import { CreateUserDTO } from '../dtos/create-user.dto';
-import { CreateUserResponse } from '../responses/create-user.response';
+import { CreateUserUseCase } from 'src/domain/use-cases/user/create-user.use-case';
+import { CreateUserDTO } from '../../dtos/user/create-user.dto';
+import { CreateUserResponse } from '../../responses/user/create-user.response';
 
 interface Input {
   name: string;

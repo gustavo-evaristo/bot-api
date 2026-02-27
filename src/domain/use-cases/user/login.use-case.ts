@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Password } from '../entities/vos';
-import { IUserRepository } from '../repositories/user.repository';
-import { UserEntity } from '../entities/user.entity';
+import { Password } from '../../entities/vos';
+import { IUserRepository } from '../../repositories/user.repository';
+import { UserEntity } from '../../entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 
 interface Output {

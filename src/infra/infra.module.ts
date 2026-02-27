@@ -3,17 +3,35 @@ import {
   CreateUserController,
   GetProfileController,
   LoginController,
+  UpdateKanbamController,
+  CreateKanbamController,
 } from './controllers';
-import { CreateUserUseCase } from 'src/domain/use-cases/create-user.use-case';
+import {
+  CreateUserUseCase,
+  LoginUseCase,
+  GetProfileUseCase,
+  CreateKanbamUseCase,
+  UpdateKanbamUseCase,
+} from 'src/domain/use-cases';
 import { DatabaseModule } from './database/database.module';
-import { LoginUseCase } from 'src/domain/use-cases/login.use-case';
 import { AuthenticationModule } from './authentication/authentication.module';
-import { GetProfileUseCase } from 'src/domain/use-cases/get-profile.use-case';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [DatabaseModule, AuthenticationModule, WhatsappModule],
-  controllers: [CreateUserController, LoginController, GetProfileController],
-  providers: [CreateUserUseCase, LoginUseCase, GetProfileUseCase],
+  controllers: [
+    CreateUserController,
+    LoginController,
+    GetProfileController,
+    CreateKanbamController,
+    UpdateKanbamController,
+  ],
+  providers: [
+    CreateUserUseCase,
+    LoginUseCase,
+    GetProfileUseCase,
+    CreateKanbamUseCase,
+    UpdateKanbamUseCase,
+  ],
 })
 export class InfraModule {}
