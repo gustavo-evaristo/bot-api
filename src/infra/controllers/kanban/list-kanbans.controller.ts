@@ -1,5 +1,10 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ListKanbansUseCase } from 'src/domain/use-cases/kanban/list-kanbans.use-case';
 import { JwtGuard } from 'src/infra/authentication/jwt.guard';
 import { ListkanbansResponse } from 'src/infra/responses/kanban/list-kanbans.response';
@@ -9,6 +14,7 @@ import { ListkanbansResponse } from 'src/infra/responses/kanban/list-kanbans.res
 export class ListKanbansController {
   constructor(private readonly listKanbansUseCase: ListKanbansUseCase) {}
 
+  @ApiOperation({ summary: 'List kanbans' })
   @ApiOkResponse({ type: ListkanbansResponse, isArray: true })
   @ApiBearerAuth()
   @UseGuards(JwtGuard)

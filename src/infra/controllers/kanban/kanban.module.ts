@@ -4,6 +4,7 @@ import { GetKanbanController } from './get-kanban.controller';
 import { UpdateKanbanController } from './update-kanban.controller';
 import {
   CreateKanbanUseCase,
+  DuplicateKanbanUseCase,
   GetKanbanUseCase,
   ListKanbansUseCase,
   UpdateKanbanUseCase,
@@ -11,6 +12,7 @@ import {
 import { CreateKanbanController } from './create-kanban.controller';
 import { DatabaseModule } from 'src/infra/database/database.module';
 import { AuthenticationModule } from 'src/infra/authentication/authentication.module';
+import { DuplicateKanbanController } from './duplicate-kanban.controller';
 
 @Module({
   providers: [
@@ -18,12 +20,14 @@ import { AuthenticationModule } from 'src/infra/authentication/authentication.mo
     ListKanbansUseCase,
     GetKanbanUseCase,
     CreateKanbanUseCase,
+    DuplicateKanbanUseCase,
   ],
   controllers: [
     CreateKanbanController,
     ListKanbansController,
     GetKanbanController,
     UpdateKanbanController,
+    DuplicateKanbanController,
   ],
   imports: [DatabaseModule, AuthenticationModule],
 })
