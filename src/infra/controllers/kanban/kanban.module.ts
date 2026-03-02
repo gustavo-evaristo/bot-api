@@ -5,10 +5,12 @@ import { UpdateKanbanController } from './update-kanban.controller';
 import {
   ActiveKanbanUseCase,
   CreateKanbanUseCase,
+  DeleteKanbanUseCase,
   DesactiveKanbanUseCase,
   DuplicateKanbanUseCase,
   GetKanbanUseCase,
   ListKanbansUseCase,
+  UpdateKanbanPhoneNumberUseCase,
   UpdateKanbanUseCase,
 } from 'src/domain/use-cases';
 import { CreateKanbanController } from './create-kanban.controller';
@@ -17,6 +19,8 @@ import { AuthenticationModule } from 'src/infra/authentication/authentication.mo
 import { DuplicateKanbanController } from './duplicate-kanban.controller';
 import { ActiveKanbanController } from './active-kanban.controller';
 import { DesactiveKanbanController } from './desactive-kanban.controller';
+import { UpdateKanbanPhoneNumberController } from './update-kanban-phone-number.controller';
+import { DeleteKanbanController } from './delete-kanban.controller';
 
 @Module({
   providers: [
@@ -27,6 +31,8 @@ import { DesactiveKanbanController } from './desactive-kanban.controller';
     DuplicateKanbanUseCase,
     ActiveKanbanUseCase,
     DesactiveKanbanUseCase,
+    UpdateKanbanPhoneNumberUseCase,
+    DeleteKanbanUseCase,
   ],
   controllers: [
     CreateKanbanController,
@@ -36,6 +42,8 @@ import { DesactiveKanbanController } from './desactive-kanban.controller';
     DuplicateKanbanController,
     ActiveKanbanController,
     DesactiveKanbanController,
+    UpdateKanbanPhoneNumberController,
+    DeleteKanbanController,
   ],
   imports: [DatabaseModule, AuthenticationModule],
 })
