@@ -18,5 +18,7 @@ export class DesactiveKanbanController {
   @Post('desactive')
   async handle(@Body() { id }: ActiveKanbanDTO, @Req() { user }: IReq) {
     await this.desactiveKanbanUseCase.execute({ id, userId: user.id });
+
+    return { status: 'ok' };
   }
 }
