@@ -58,6 +58,9 @@ export class KanbanRepository implements IKanbanRepository {
   async findManyByUserId(userId: any): Promise<KanbanEntity[]> {
     const kanbans = await this.prismaService.kanbans.findMany({
       where: { userId, isDeleted: false },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     return kanbans.map(
