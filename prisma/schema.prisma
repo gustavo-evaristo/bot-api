@@ -37,4 +37,40 @@ model kanbans {
   phoneNumber String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  stages      stages[]
+}
+
+model stages {
+  id            String           @id @default(uuid())
+  kanbanId      String
+  kanban        kanbans          @relation(fields: [kanbanId], references: [id])
+  isDeleted     Boolean          @default(false)
+  title         String
+  description   String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  stageContents stage_contents[]
+}
+
+model stage_contents {
+  id          String    @id @default(uuid())
+  stageId     String
+  stage       stages    @relation(fields: [stageId], references: [id])
+  isDeleted   Boolean   @default(false)
+  content     String
+  contentType String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  answers     answers[]
+}
+
+model answers {
+  id             String         @id @default(uuid())
+  stageContentId String
+  stageContent   stage_contents @relation(fields: [stageContentId], references: [id])
+  isDeleted      Boolean        @default(false)
+  content        String
+  score          Int
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
