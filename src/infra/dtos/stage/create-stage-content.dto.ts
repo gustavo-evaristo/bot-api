@@ -11,26 +11,6 @@ import {
 } from 'class-validator';
 import { ContentType } from 'src/domain/entities/stage-content.entity';
 
-class Answer1 {
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ example: 'Não' })
-  content: string;
-
-  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 0 })
-  @Min(0)
-  @ApiProperty({ example: 0 })
-  score: number;
-}
-
-class Answer2 {
-  @ApiProperty({ example: 'Sim' })
-  content: string;
-
-  @ApiProperty({ example: 1 })
-  score: number;
-}
-
 export class AnswerDto {
   @IsString()
   @IsNotEmpty()
