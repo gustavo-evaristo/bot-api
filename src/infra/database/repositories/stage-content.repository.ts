@@ -35,4 +35,18 @@ export class StageContentRepository implements IStageContentRepository {
       contentType: stageContent.contentType as IContentType,
     });
   }
+
+  async save(stageContent: StageContentEntity): Promise<void> {
+    const data: Prisma.stage_contentsUpdateArgs['data'] = {
+      content: stageContent.content,
+      contentType: stageContent.contentType,
+      isDeleted: stageContent.isDeleted,
+      updatedAt: stageContent.updatedAt,
+    };
+
+    await this.prismaService.stage_contents.update({
+      where: { id: stageContent.id.toString() },
+      data,
+    });
+  }
 }

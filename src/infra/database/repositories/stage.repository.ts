@@ -29,4 +29,20 @@ export class StageRepository implements IStageRepository {
 
     return new StageEntity(stage);
   }
+
+  async save(stage: StageEntity): Promise<void> {
+    const {} = stage;
+
+    const data: Prisma.stagesUpdateArgs['data'] = {
+      description: stage.description,
+      title: stage.title,
+      isDeleted: stage.isDeleted,
+      updatedAt: stage.updatedAt,
+    };
+
+    await this.prismaService.stage_contents.update({
+      where: { id: stage.id.toString() },
+      data,
+    });
+  }
 }

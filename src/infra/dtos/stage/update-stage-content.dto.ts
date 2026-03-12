@@ -23,7 +23,7 @@ export class AnswerDto {
   score: number;
 }
 
-export class CreateStageContentDTO {
+export class UpdateStageContentDTO {
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ example: 'Você já conhece o modelo de consignado?' })
