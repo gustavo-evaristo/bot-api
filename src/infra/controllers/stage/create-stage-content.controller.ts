@@ -4,7 +4,7 @@ import {
   ContentType,
   IContentType,
 } from 'src/domain/entities/stage-content.entity';
-import { CreateStageContentUseCase } from 'src/domain/use-cases/stage-content/create-stage.cotent.use-case';
+import { CreateStageContentUseCase } from 'src/domain/use-cases/stage-content/create-stage.content.use-case';
 import { JwtGuard } from 'src/infra/authentication/jwt.guard';
 import { CreateStageContentDTO } from 'src/infra/dtos/stage/create-stage-content.dto';
 

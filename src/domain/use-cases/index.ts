@@ -10,3 +10,6 @@ export * from './kanban/get-kanban.use-case';
 export * from './user/create-user.use-case';
 export * from './user/get-profile.use-case';
 export * from './user/login.use-case';
+export * from './stage-content/create-stage.content.use-case';
+export * from './stage-content/delete-stage-content.use-case';
+export * from './stage-content/update-stage-content.use-case';

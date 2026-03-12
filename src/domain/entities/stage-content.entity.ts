@@ -8,6 +8,11 @@ export enum ContentType {
 
 export type IContentType = (typeof ContentType)[keyof typeof ContentType];
 
+type Update = {
+  content: string;
+  contentType: IContentType;
+};
+
 type StageContentEntityProps = {
   id?: string | UUID | null;
   stageId: string | UUID;
@@ -52,11 +57,26 @@ export class StageContentEntity {
     this.updatedAt = props.updatedAt || createdAt;
   }
 
+  private touch() {
+    this.updatedAt = new Date();
+  }
+
   isMultipleChoicesContent(): boolean {
     return this.contentType === ContentType.MULTIPLE_CHOICE;
   }
 
   isFreeInputContent(): boolean {
     return this.contentType === ContentType.FREE_INPUT;
+  }
+
+  delete() {
+    this.isDeleted = true;
+    this.touch();
+  }
+
+  update({ content, contentType }: Update) {
+    this.content = content;
+    this.contentType = contentType;
+    this.touch();
   }
 }

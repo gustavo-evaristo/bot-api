@@ -4,7 +4,7 @@ import { CreateStageUseCase } from 'src/domain/use-cases/stage/create-stage.use-
 import { DatabaseModule } from 'src/infra/database/database.module';
 import { AuthenticationModule } from 'src/infra/authentication/authentication.module';
 import { CreateStageContentController } from './create-stage-content.controller';
-import { CreateStageContentUseCase } from 'src/domain/use-cases/stage-content/create-stage.cotent.use-case';
+import { CreateStageContentUseCase } from 'src/domain/use-cases/stage-content/create-stage.content.use-case';
 
 @Module({
   controllers: [CreateStageController, CreateStageContentController],

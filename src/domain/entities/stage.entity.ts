@@ -10,6 +10,11 @@ type StageEntityProps = {
   updatedAt?: Date | null;
 };
 
+type Update = {
+  title: string;
+  description: string;
+};
+
 export class StageEntity {
   id: UUID;
   kanbanId: UUID;
@@ -42,5 +47,21 @@ export class StageEntity {
 
     this.createdAt = createdAt;
     this.updatedAt = props.updatedAt || createdAt;
+  }
+
+  private touch() {
+    this.updatedAt = new Date();
+  }
+
+  delete() {
+    this.isDeleted = true;
+    this.touch();
+  }
+
+  update({ title, description }: Update) {
+    this.title = title;
+    this.description = description;
+
+    this.touch();
   }
 }
