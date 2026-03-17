@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { KanbanEntity } from 'src/domain/entities/kanban.entity';
+import { KanbanDetails, KanbanEntity } from 'src/domain/entities/kanban.entity';
 import { IKanbanRepository, IUserRepository } from 'src/domain/repositories';
 
 interface Input {
@@ -14,20 +14,20 @@ export class GetKanbanUseCase {
     private readonly kanbanRepository: IKanbanRepository,
   ) {}
 
-  async execute({ id, userId }: Input): Promise<KanbanEntity> {
+  async execute({ id, userId }: Input): Promise<KanbanDetails> {
     const user = await this.userRepository.get(userId);
 
     if (!user) {
       throw new Error('User not found');
     }
 
-    const kanban = await this.kanbanRepository.get(id);
+    const kanban = await this.kanbanRepository.getDetails(id);
 
     if (!kanban) {
       throw new Error('Kanban not found');
     }
 
-    if (!kanban.belongsTo(user.id)) {
+    if (kanban.userId !== userId) {
       throw new Error('User does not own this kanban');
     }
 

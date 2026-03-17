@@ -19,6 +19,34 @@ interface UpdateKanbanEntityProps {
   imageUrl: string | null;
 }
 
+interface Answers {
+  id: string;
+  content: string;
+  score: number;
+}
+
+interface StageContent {
+  id: string;
+  content: string;
+  contentType: string;
+  answers: Answers[];
+}
+
+interface Stage {
+  id: string;
+  title: string;
+  description: string;
+  contents: StageContent[];
+}
+
+export interface KanbanDetails {
+  id: string;
+  title: string;
+  description: string;
+  userId: string;
+  stages: Stage[];
+}
+
 export class KanbanEntity {
   id: UUID;
   userId: UUID;

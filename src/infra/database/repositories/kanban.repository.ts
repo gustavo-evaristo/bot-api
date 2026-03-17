@@ -1,6 +1,6 @@
 import { IKanbanRepository } from 'src/domain/repositories';
 import { PrismaService } from '../prisma.service';
-import { KanbanEntity } from 'src/domain/entities/kanban.entity';
+import { KanbanDetails, KanbanEntity } from 'src/domain/entities/kanban.entity';
 import { Prisma } from 'generated/prisma/client';
 import { UUID } from 'src/domain/entities/vos';
 import { Injectable } from '@nestjs/common';
@@ -71,5 +71,54 @@ export class KanbanRepository implements IKanbanRepository {
           userId: UUID.from(kanban.userId),
         }),
     );
+  }
+
+  async getDetails(id: string): Promise<KanbanDetails | null> {
+    const kanban = await this.prismaService.kanbans.findUnique({
+      where: { id, isDeleted: false },
+      include: {
+        stages: {
+          where: { isDeleted: false },
+          include: {
+            stageContents: {
+              where: { isDeleted: false },
+              include: {
+                answers: {
+                  where: {
+                    isDeleted: false,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!kanban) {
+      return null;
+    }
+
+    return {
+      id: kanban.id,
+      title: kanban.title,
+      description: kanban.description,
+      userId: kanban.userId,
+      stages: kanban.stages.map((stage) => ({
+        id: stage.id,
+        title: stage.title,
+        description: stage.description,
+        contents: stage.stageContents.map((stageContent) => ({
+          id: stageContent.id,
+          content: stageContent.content,
+          contentType: stageContent.contentType,
+          answers: stageContent.answers.map((answer) => ({
+            id: answer.id,
+            content: answer.content,
+            score: answer.score,
+          })),
+        })),
+      })),
+    };
   }
 }

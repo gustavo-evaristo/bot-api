@@ -9,6 +9,7 @@ import {
 import { GetKanbanUseCase } from 'src/domain/use-cases';
 import { JwtGuard } from 'src/infra/authentication/jwt.guard';
 import { GetKanbanDTO } from 'src/infra/dtos/kanban/get-kanban.dto';
+import { GetKanbanResponse } from 'src/infra/responses/kanban/get-kanban.response';
 
 @ApiTags('Kanban')
 @Controller('kanban')
@@ -18,24 +19,14 @@ export class GetKanbanController {
   @ApiOperation({
     summary: 'Find kanban by id',
   })
-  @ApiOkResponse({ type: GetKanbanDTO })
+  @ApiOkResponse({ type: GetKanbanResponse })
   @ApiBearerAuth()
   @UseGuards(JwtGuard)
   @Get(':id')
   async getKanban(@Param() { id }: GetKanbanDTO, @Req() { user }: IReq) {
-    const kanban = await this.getKanbanUseCase.execute({
+    return this.getKanbanUseCase.execute({
       id,
       userId: user.id,
     });
-
-    return {
-      id: kanban.id.toString(),
-      isActive: kanban.isActive,
-      title: kanban.title,
-      description: kanban.description,
-      imageUrl: kanban.imageUrl,
-      phoneNumber: kanban.phoneNumber,
-      createdAt: kanban.createdAt,
-    };
   }
 }
