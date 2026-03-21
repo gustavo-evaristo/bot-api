@@ -84,9 +84,7 @@ export class KanbanRepository implements IKanbanRepository {
               where: { isDeleted: false },
               include: {
                 answers: {
-                  where: {
-                    isDeleted: false,
-                  },
+                  where: { isDeleted: false },
                 },
               },
             },
