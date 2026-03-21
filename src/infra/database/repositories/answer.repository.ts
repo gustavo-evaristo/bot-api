@@ -28,4 +28,11 @@ export class AnswerRepository implements IAnswerRepository {
 
     return new AnswerEntity(answer);
   }
+
+  async deleteByStageContentId(stageContentId: string): Promise<void> {
+    await this.prismaService.answers.updateMany({
+      data: { isDeleted: true },
+      where: { stageContentId },
+    });
+  }
 }

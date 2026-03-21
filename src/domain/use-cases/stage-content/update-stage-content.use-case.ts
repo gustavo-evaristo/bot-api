@@ -55,6 +55,10 @@ export class UpdateStageContentUseCase {
     await this.stageContentRepository.save(stageContent);
 
     if (stageContent.isMultipleChoicesContent() && answers?.length) {
+      await this.answerRepository.deleteByStageContentId(
+        stageContent.id.toString(),
+      );
+
       const answersToCreate = [];
 
       for (const answer of answers) {
