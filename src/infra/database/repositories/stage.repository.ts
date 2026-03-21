@@ -40,7 +40,7 @@ export class StageRepository implements IStageRepository {
       updatedAt: stage.updatedAt,
     };
 
-    await this.prismaService.stage_contents.update({
+    await this.prismaService.stages.update({
       where: { id: stage.id.toString() },
       data,
     });
