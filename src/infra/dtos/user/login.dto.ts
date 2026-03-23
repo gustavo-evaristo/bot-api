@@ -5,7 +5,7 @@ export class LoginDTO {
   @IsString()
   @IsNotEmpty()
   @IsEmail({}, { message: 'Invalid email format' })
-  @ApiProperty({ example: 'john@example.com' })
+  @ApiProperty({ example: 'john@doe.com' })
   email: string;
 
   @IsString()
