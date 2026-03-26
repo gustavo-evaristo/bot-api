@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserEntity } from '../../entities/user.entity';
 import { Password } from '../../entities/vos';
 import { IUserRepository } from '../../repositories/user.repository';
+import { JwtService } from '@nestjs/jwt';
 
 interface Input {
   name: string;
@@ -11,9 +12,17 @@ interface Input {
   confirmPassword: string;
 }
 
+interface Output {
+  user: UserEntity;
+  token: string;
+}
+
 @Injectable()
 export class CreateUserUseCase {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async execute({
     name,
@@ -21,7 +30,7 @@ export class CreateUserUseCase {
     phone,
     password,
     confirmPassword,
-  }: Input): Promise<UserEntity> {
+  }: Input): Promise<Output> {
     const userPassword = Password.createWithConfirmation(
       password,
       confirmPassword,
@@ -45,6 +54,10 @@ export class CreateUserUseCase {
 
     await this.userRepository.create(user);
 
-    return user;
+    const payload = { id: user.id.toString() };
+
+    const token = this.jwtService.sign(payload);
+
+    return { user, token };
   }
 }

@@ -19,7 +19,7 @@ export class CreateUserController {
   @ApiBody({ type: CreateUserDTO })
   @ApiCreatedResponse({ type: CreateUserResponse })
   async execute(@Body() body: CreateUserDTO) {
-    const user = await this.createUserUseCase.execute(body);
+    const { user, token } = await this.createUserUseCase.execute(body);
 
     return {
       id: user.id.toString(),
@@ -27,6 +27,7 @@ export class CreateUserController {
       email: user.email,
       phone: user.phone,
       createdAt: user.createdAt,
+      token,
     };
   }
 }

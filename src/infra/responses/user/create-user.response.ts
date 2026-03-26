@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { randomUUID } from 'crypto';
 
-export class CreateUserResponse {
+class User {
   @ApiProperty({ example: randomUUID() })
   id: string;
 
@@ -16,4 +16,12 @@ export class CreateUserResponse {
 
   @ApiProperty({ example: new Date() })
   createdAt: Date;
+}
+
+export class CreateUserResponse {
+  @ApiProperty({ type: User })
+  user: User;
+
+  @ApiProperty({ example: '1qaz2wsx' })
+  token: string;
 }
