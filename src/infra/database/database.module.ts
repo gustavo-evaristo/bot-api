@@ -12,6 +12,12 @@ import { KanbanRepository } from './repositories/kanban.repository';
 import { StageRepository } from './repositories/stage.repository';
 import { StageContentRepository } from './repositories/stage-content.repository';
 import { AnswerRepository } from './repositories/answer.repository';
+import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
+import { ConversationRepository } from './repositories/conversation.repository';
+import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
+import { ConversationProgressRepository } from './repositories/conversation-progress.repository';
+import { ILeadResponseRepository } from 'src/domain/repositories/lead-response.repository';
+import { LeadResponseRepository } from './repositories/lead-response.repository';
 
 @Module({
   providers: [
@@ -36,6 +42,18 @@ import { AnswerRepository } from './repositories/answer.repository';
       provide: IAnswerRepository,
       useClass: AnswerRepository,
     },
+    {
+      provide: IConversationRepository,
+      useClass: ConversationRepository,
+    },
+    {
+      provide: IConversationProgressRepository,
+      useClass: ConversationProgressRepository,
+    },
+    {
+      provide: ILeadResponseRepository,
+      useClass: LeadResponseRepository,
+    },
   ],
   exports: [
     IUserRepository,
@@ -43,6 +61,9 @@ import { AnswerRepository } from './repositories/answer.repository';
     IStageRepository,
     IStageContentRepository,
     IAnswerRepository,
+    IConversationRepository,
+    IConversationProgressRepository,
+    ILeadResponseRepository,
   ],
 })
 export class DatabaseModule {}

@@ -13,3 +13,4 @@ export * from './user/login.use-case';
 export * from './stage-content/create-stage.content.use-case';
 export * from './stage-content/delete-stage-content.use-case';
 export * from './stage-content/update-stage-content.use-case';
+export * from './flow-engine/process-message.use-case';

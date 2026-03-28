@@ -3,3 +3,6 @@ export * from './user.repository';
 export * from './stage.repository';
 export * from './stage-content.repository';
 export * from './answer.repository';
+export * from './conversation.repository';
+export * from './conversation-progress.repository';
+export * from './lead-response.repository';

@@ -79,9 +79,11 @@ export class KanbanRepository implements IKanbanRepository {
       include: {
         stages: {
           where: { isDeleted: false },
+          orderBy: { order: 'asc' },
           include: {
             stageContents: {
               where: { isDeleted: false },
+              orderBy: { order: 'asc' },
               include: {
                 answers: {
                   where: { isDeleted: false },
@@ -106,10 +108,12 @@ export class KanbanRepository implements IKanbanRepository {
         id: stage.id,
         title: stage.title,
         description: stage.description,
+        order: stage.order,
         contents: stage.stageContents.map((stageContent) => ({
           id: stageContent.id,
           content: stageContent.content,
           contentType: stageContent.contentType,
+          order: stageContent.order,
           answers: stageContent.answers.map((answer) => ({
             id: answer.id,
             content: answer.content,
@@ -118,5 +122,19 @@ export class KanbanRepository implements IKanbanRepository {
         })),
       })),
     };
+  }
+
+  async findByPhoneNumber(phoneNumber: string): Promise<KanbanEntity | null> {
+    const kanban = await this.prismaService.kanbans.findFirst({
+      where: { phoneNumber, isActive: true, isDeleted: false },
+    });
+
+    if (!kanban) return null;
+
+    return new KanbanEntity({
+      ...kanban,
+      id: UUID.from(kanban.id),
+      userId: UUID.from(kanban.userId),
+    });
   }
 }

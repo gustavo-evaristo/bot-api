@@ -29,6 +29,7 @@ interface StageContent {
   id: string;
   content: string;
   contentType: string;
+  order: number;
   answers: Answers[];
 }
 
@@ -36,6 +37,7 @@ interface Stage {
   id: string;
   title: string;
   description: string;
+  order: number;
   contents: StageContent[];
 }
 

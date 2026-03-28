@@ -6,4 +6,5 @@ export abstract class IKanbanRepository {
   abstract update(kanban: KanbanEntity): Promise<void>;
   abstract findManyByUserId(userId): Promise<KanbanEntity[]>;
   abstract getDetails(id: string): Promise<KanbanDetails | null>;
+  abstract findByPhoneNumber(phoneNumber: string): Promise<KanbanEntity | null>;
 }
