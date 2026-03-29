@@ -10,11 +10,13 @@ import { ContentType } from 'src/domain/entities/stage-content.entity';
 import { KanbanDetails } from 'src/domain/entities/kanban.entity';
 
 interface Input {
-  phoneNumber: string;
+  botPhoneNumber: string;
+  leadPhoneNumber: string;
   messageText: string;
 }
 
 interface Output {
+  conversationId: string | null;
   messagesToSend: string[];
 }
 
@@ -46,36 +48,43 @@ export class ProcessMessageUseCase {
     private readonly leadResponseRepository: ILeadResponseRepository,
   ) {}
 
-  async execute({ phoneNumber, messageText }: Input): Promise<Output> {
-    const kanban = await this.kanbanRepository.findByPhoneNumber(phoneNumber);
+  async execute({ botPhoneNumber, leadPhoneNumber, messageText }: Input): Promise<Output> {
+    const kanban = await this.kanbanRepository.findByPhoneNumber(botPhoneNumber);
+
+    console.log({ botPhoneNumber, leadPhoneNumber, messageText });
 
     if (!kanban) {
-      return { messagesToSend: ['Olá! No momento não há atendimento configurado para este número.'] };
+      return {
+        conversationId: null,
+        messagesToSend: [
+          'Olá! No momento não há atendimento configurado para este número.',
+        ],
+      };
     }
 
     const details = await this.kanbanRepository.getDetails(kanban.id.toString());
 
     if (!details || details.stages.length === 0) {
-      return { messagesToSend: [] };
+      return { conversationId: null, messagesToSend: [] };
     }
 
     let conversation = await this.conversationRepository.findActive(
       kanban.id.toString(),
-      phoneNumber,
+      leadPhoneNumber,
     );
 
     // Nova conversa: iniciar do primeiro StageContent
     if (!conversation) {
       conversation = new ConversationEntity({
         kanbanId: kanban.id,
-        leadPhoneNumber: phoneNumber,
+        leadPhoneNumber: leadPhoneNumber,
       });
 
       const firstStage = details.stages[0];
       const firstContent = firstStage.contents[0];
 
       if (!firstContent) {
-        return { messagesToSend: [] };
+        return { conversationId: null, messagesToSend: [] };
       }
 
       const progress = new ConversationProgressEntity({
@@ -97,13 +106,13 @@ export class ProcessMessageUseCase {
     );
 
     if (!progress || !progress.waitingForResponse) {
-      return { messagesToSend: [] };
+      return { conversationId: conversation.id.toString(), messagesToSend: [] };
     }
 
     const currentContent = this.findContent(details, progress.currentStageContentId);
 
     if (!currentContent) {
-      return { messagesToSend: [] };
+      return { conversationId: conversation.id.toString(), messagesToSend: [] };
     }
 
     // Salvar resposta do lead
@@ -111,13 +120,27 @@ export class ProcessMessageUseCase {
     let score: number | null = null;
 
     if (currentContent.contentType === ContentType.MULTIPLE_CHOICE) {
-      const matched = currentContent.answers.find(
-        (a) => a.content.trim().toLowerCase() === messageText.trim().toLowerCase(),
+      const trimmed = messageText.trim();
+      const indexMatch = parseInt(trimmed, 10);
+      const matched = currentContent.answers.find((a, i) =>
+        (!isNaN(indexMatch) && indexMatch === i + 1) ||
+        a.content.trim().toLowerCase() === trimmed.toLowerCase(),
       );
-      if (matched) {
-        answerId = matched.id;
-        score = matched.score;
+
+      if (!matched) {
+        const options = currentContent.answers
+          .map((a, i) => `${i + 1}. ${a.content}`)
+          .join('\n');
+        return {
+          conversationId: conversation.id.toString(),
+          messagesToSend: [
+            `Opção inválida. Por favor, escolha uma das alternativas:\n\n${options}\n\n_Digite o número da opção desejada._`,
+          ],
+        };
       }
+
+      answerId = matched.id;
+      score = matched.score;
     }
 
     const leadResponse = new LeadResponseEntity({
@@ -131,12 +154,16 @@ export class ProcessMessageUseCase {
     await this.leadResponseRepository.create(leadResponse);
 
     // Avançar para próxima posição
-    const next = this.getNextPosition(details, progress.currentStageId, progress.currentStageContentId);
+    const next = this.getNextPosition(
+      details,
+      progress.currentStageId,
+      progress.currentStageContentId,
+    );
 
     if (!next) {
       conversation.finish();
       await this.conversationRepository.update(conversation);
-      return { messagesToSend: [] };
+      return { conversationId: conversation.id.toString(), messagesToSend: [] };
     }
 
     progress.advanceTo(next.stageId, next.stageContentId);
@@ -178,11 +205,14 @@ export class ProcessMessageUseCase {
         // FREE_INPUT ou MULTIPLE_CHOICE: enviar pergunta e aguardar
         let message = currentContent.content;
 
-        if (currentContent.contentType === ContentType.MULTIPLE_CHOICE && currentContent.answers.length > 0) {
+        if (
+          currentContent.contentType === ContentType.MULTIPLE_CHOICE &&
+          currentContent.answers.length > 0
+        ) {
           const options = currentContent.answers
             .map((a, i) => `${i + 1}. ${a.content}`)
             .join('\n');
-          message = `${currentContent.content}\n\n${options}`;
+          message = `${currentContent.content}\n\n${options}\n\n_Digite o número da opção desejada._`;
         }
 
         messagesToSend.push(message);
@@ -192,7 +222,7 @@ export class ProcessMessageUseCase {
       }
     }
 
-    return { messagesToSend };
+    return { conversationId: conversation.id.toString(), messagesToSend };
   }
 
   private findContent(details: KanbanDetails, contentId: string): StageContent | null {
@@ -215,7 +245,6 @@ export class ProcessMessageUseCase {
     const contentIndex = stage.contents.findIndex((c) => c.id === currentContentId);
     if (contentIndex === -1) return null;
 
-    // Próximo conteúdo no mesmo stage
     if (contentIndex + 1 < stage.contents.length) {
       return {
         stageId: stage.id,
@@ -223,7 +252,6 @@ export class ProcessMessageUseCase {
       };
     }
 
-    // Primeiro conteúdo do próximo stage
     if (stageIndex + 1 < details.stages.length) {
       const nextStage = details.stages[stageIndex + 1] as Stage;
       if (nextStage.contents.length === 0) return null;
@@ -233,7 +261,6 @@ export class ProcessMessageUseCase {
       };
     }
 
-    // Fim do fluxo
     return null;
   }
 }

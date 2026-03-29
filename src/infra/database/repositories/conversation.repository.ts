@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
+import {
+  ConversationDetail,
+  ConversationSummary,
+  IConversationRepository,
+} from 'src/domain/repositories/conversation.repository';
 import {
   ConversationEntity,
   ConversationStatus,
@@ -53,5 +57,60 @@ export class ConversationRepository implements IConversationRepository {
         updatedAt: conversation.updatedAt,
       },
     });
+  }
+
+  async findManyByUserId(userId: string): Promise<ConversationSummary[]> {
+    const records = await this.prismaService.conversations.findMany({
+      where: {
+        kanban: { userId, isDeleted: false },
+      },
+      include: {
+        kanban: { select: { id: true, title: true } },
+        messageHistory: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return records.map((r) => ({
+      id: r.id,
+      leadPhoneNumber: r.leadPhoneNumber,
+      status: r.status,
+      kanbanId: r.kanban.id,
+      kanbanTitle: r.kanban.title,
+      lastMessage:
+        r.messageHistory.length > 0
+          ? {
+              content: r.messageHistory[0].content,
+              sender: r.messageHistory[0].sender,
+              sentAt: r.messageHistory[0].createdAt,
+            }
+          : null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  }
+
+  async findById(id: string): Promise<ConversationDetail | null> {
+    const r = await this.prismaService.conversations.findUnique({
+      where: { id },
+      include: {
+        kanban: { select: { title: true, userId: true } },
+      },
+    });
+
+    if (!r) return null;
+
+    return {
+      id: r.id,
+      leadPhoneNumber: r.leadPhoneNumber,
+      status: r.status,
+      kanbanTitle: r.kanban.title,
+      kanbanUserId: r.kanban.userId,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    };
   }
 }

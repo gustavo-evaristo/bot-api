@@ -90,6 +90,16 @@ model conversations {
   updatedAt       DateTime                @updatedAt
   progress        conversation_progress?
   leadResponses   lead_responses[]
+  messageHistory  message_history[]
+}
+
+model message_history {
+  id             String        @id @default(uuid())
+  conversationId String
+  conversation   conversations @relation(fields: [conversationId], references: [id])
+  sender         String
+  content        String
+  createdAt      DateTime      @default(now())
 }
 
 model conversation_progress {

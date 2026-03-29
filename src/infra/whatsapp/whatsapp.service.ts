@@ -1,17 +1,42 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Client, LocalAuth, Message } from 'whatsapp-web.js';
 import * as QRCode from 'qrcode';
+import * as fs from 'fs';
 import { WhatsappGateway } from './whatsapp.gateway';
 import { ProcessMessageUseCase } from 'src/domain/use-cases/flow-engine/process-message.use-case';
+import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
+import {
+  MessageHistoryEntity,
+  MessageSender,
+} from 'src/domain/entities/message-history.entity';
+import { UUID } from 'src/domain/entities/vos';
 
 @Injectable()
-export class WhatsappService {
+export class WhatsappService implements OnModuleInit {
   private sessions = new Map<string, Client>();
 
   constructor(
     private readonly gateway: WhatsappGateway,
     private readonly processMessageUseCase: ProcessMessageUseCase,
+    private readonly messageHistoryRepository: IMessageHistoryRepository,
   ) {}
+
+  async onModuleInit() {
+    const authDir = '.wwebjs_auth';
+    if (!fs.existsSync(authDir)) return;
+
+    const dirs = fs.readdirSync(authDir);
+
+    for (const dir of dirs) {
+      if (dir.startsWith('session-')) {
+        const userId = dir.replace('session-', '');
+        console.log(`Restaurando sessão WhatsApp para usuário: ${userId}`);
+        this.startSession(userId).catch((err) =>
+          console.error(`Erro ao restaurar sessão ${userId}:`, err),
+        );
+      }
+    }
+  }
 
   async startSession(userId: string) {
     if (this.sessions.has(userId)) {
@@ -24,8 +49,11 @@ export class WhatsappService {
       puppeteer: { headless: true },
     });
 
+    this.sessions.set(userId, client);
+
     client.on('qr', async (qr) => {
       const qrImage = await QRCode.toDataURL(qr);
+      console.log(qrImage);
       this.gateway.sendQrToUser(userId, qrImage);
     });
 
@@ -45,28 +73,50 @@ export class WhatsappService {
       this.sessions.delete(userId);
     });
 
-    this.sessions.set(userId, client);
     await client.initialize();
   }
 
   private async handleIncomingMessage(client: Client, message: Message) {
-    // Ignora mensagens de grupos (IDs de grupo terminam com @g.us)
     if (message.from.endsWith('@g.us')) return;
+    if (!message.body || message.body.trim() === '') return;
 
-    // Extrai número limpo (ex: "5511999999999@c.us" → "5511999999999")
-    const phoneNumber = message.from.split('@')[0];
+    const contact = await message.getContact();
+    const leadPhoneNumber = '+' + contact.number;
+    const botPhoneNumber = '+' + client.info.wid.user;
     const messageText = message.body;
 
-    console.log(`Mensagem recebida de ${phoneNumber}: ${messageText}`);
+    console.log(`Mensagem recebida de ${leadPhoneNumber} para ${botPhoneNumber}: ${messageText}`);
 
     try {
-      const { messagesToSend } = await this.processMessageUseCase.execute({
-        phoneNumber,
-        messageText,
-      });
+      const { conversationId, messagesToSend } =
+        await this.processMessageUseCase.execute({
+          botPhoneNumber,
+          leadPhoneNumber,
+          messageText,
+        });
+
+      if (conversationId) {
+        await this.messageHistoryRepository.create(
+          new MessageHistoryEntity({
+            conversationId: UUID.from(conversationId),
+            sender: MessageSender.LEAD,
+            content: messageText,
+          }),
+        );
+      }
 
       for (const text of messagesToSend) {
         await client.sendMessage(message.from, text);
+
+        if (conversationId) {
+          await this.messageHistoryRepository.create(
+            new MessageHistoryEntity({
+              conversationId: UUID.from(conversationId),
+              sender: MessageSender.BOT,
+              content: text,
+            }),
+          );
+        }
       }
     } catch (error) {
       console.error('Erro ao processar mensagem:', error);
