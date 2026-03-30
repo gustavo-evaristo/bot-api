@@ -1,27 +1,19 @@
-// whatsapp.controller.ts
-
-import { Body, Controller, Post } from '@nestjs/common';
+import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
-import { ApiBody, ApiProperty, ApiTags } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
-
-class BodyDTO {
-  @ApiProperty({
-    description: 'id do usuário',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Name is required' })
-  userId: string;
-}
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtGuard } from '../authentication/jwt.guard';
 
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
 export class WhatsappController {
   constructor(private service: WhatsappService) {}
 
-  @ApiBody({ type: BodyDTO })
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @Post('start')
-  async start(@Body() { userId }: BodyDTO) {
+  async start(@Req() { user }: IReq) {
+    const userId = user.id;
+
     this.service.startSession(userId);
     return { message: 'Iniciando sessão...', userId };
   }
