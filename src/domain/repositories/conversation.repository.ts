@@ -3,6 +3,7 @@ import { ConversationEntity } from '../entities/conversation.entity';
 export interface ConversationSummary {
   id: string;
   leadPhoneNumber: string;
+  leadName: string | null;
   status: string;
   kanbanId: string;
   kanbanTitle: string;
@@ -14,6 +15,7 @@ export interface ConversationSummary {
 export interface ConversationDetail {
   id: string;
   leadPhoneNumber: string;
+  leadName: string | null;
   status: string;
   kanbanTitle: string;
   kanbanUserId: string;

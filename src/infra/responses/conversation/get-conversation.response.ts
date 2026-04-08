@@ -22,6 +22,9 @@ export class GetConversationResponse {
   @ApiProperty({ example: '+5511999999999' })
   leadPhoneNumber: string;
 
+  @ApiProperty({ example: 'Maria Silva', nullable: true })
+  leadName: string | null;
+
   @ApiProperty({ example: 'ACTIVE', enum: ['ACTIVE', 'FINISHED'] })
   status: string;
 

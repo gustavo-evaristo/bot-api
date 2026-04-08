@@ -9,6 +9,7 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 const makeConversationDetail = (kanbanUserId: string) => ({
   id: 'conv-1',
   leadPhoneNumber: '+5511999999999',
+  leadName: null,
   status: 'ACTIVE',
   kanbanTitle: 'Kanban A',
   kanbanUserId,

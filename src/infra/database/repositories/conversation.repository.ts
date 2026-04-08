@@ -21,6 +21,7 @@ export class ConversationRepository implements IConversationRepository {
         id: conversation.id.toString(),
         kanbanId: conversation.kanbanId.toString(),
         leadPhoneNumber: conversation.leadPhoneNumber,
+        leadName: conversation.leadName,
         status: conversation.status,
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
@@ -77,6 +78,7 @@ export class ConversationRepository implements IConversationRepository {
     return records.map((r) => ({
       id: r.id,
       leadPhoneNumber: r.leadPhoneNumber,
+      leadName: r.leadName,
       status: r.status,
       kanbanId: r.kanban.id,
       kanbanTitle: r.kanban.title,
@@ -106,6 +108,7 @@ export class ConversationRepository implements IConversationRepository {
     return {
       id: r.id,
       leadPhoneNumber: r.leadPhoneNumber,
+      leadName: r.leadName,
       status: r.status,
       kanbanTitle: r.kanban.title,
       kanbanUserId: r.kanban.userId,

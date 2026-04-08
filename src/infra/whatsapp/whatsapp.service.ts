@@ -84,8 +84,11 @@ export class WhatsappService implements OnModuleInit {
     const leadPhoneNumber = '+' + contact.number;
     const botPhoneNumber = '+' + client.info.wid.user;
     const messageText = message.body;
+    const leadName = contact.name || contact.pushname || null;
 
-    console.log(`Mensagem recebida de ${leadPhoneNumber} para ${botPhoneNumber}: ${messageText}`);
+    console.log(
+      `Mensagem recebida de nome: ${leadName}, número: ${leadPhoneNumber} para ${botPhoneNumber}: ${messageText}`,
+    );
 
     try {
       const { conversationId, messagesToSend } =
@@ -93,6 +96,7 @@ export class WhatsappService implements OnModuleInit {
           botPhoneNumber,
           leadPhoneNumber,
           messageText,
+          leadName,
         });
 
       if (conversationId) {

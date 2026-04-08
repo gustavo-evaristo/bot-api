@@ -16,6 +16,7 @@ describe('ListConversationsUseCase', () => {
       {
         id: 'c-1',
         leadPhoneNumber: '+5511999999999',
+        leadName: null,
         status: 'ACTIVE',
         kanbanId: 'k-1',
         kanbanTitle: 'Kanban',

@@ -13,6 +13,7 @@ interface Input {
   botPhoneNumber: string;
   leadPhoneNumber: string;
   messageText: string;
+  leadName?: string | null;
 }
 
 interface Output {
@@ -48,7 +49,7 @@ export class ProcessMessageUseCase {
     private readonly leadResponseRepository: ILeadResponseRepository,
   ) {}
 
-  async execute({ botPhoneNumber, leadPhoneNumber, messageText }: Input): Promise<Output> {
+  async execute({ botPhoneNumber, leadPhoneNumber, messageText, leadName }: Input): Promise<Output> {
     const kanban = await this.kanbanRepository.findByPhoneNumber(botPhoneNumber);
 
     console.log({ botPhoneNumber, leadPhoneNumber, messageText });
@@ -78,6 +79,7 @@ export class ProcessMessageUseCase {
       conversation = new ConversationEntity({
         kanbanId: kanban.id,
         leadPhoneNumber: leadPhoneNumber,
+        leadName: leadName ?? null,
       });
 
       const firstStage = details.stages[0];

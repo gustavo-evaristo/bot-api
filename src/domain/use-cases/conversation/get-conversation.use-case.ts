@@ -11,6 +11,7 @@ interface Input {
 export interface GetConversationOutput {
   id: string;
   leadPhoneNumber: string;
+  leadName: string | null;
   status: string;
   kanbanTitle: string;
   messages: {
@@ -47,6 +48,7 @@ export class GetConversationUseCase {
     return {
       id: conversation.id,
       leadPhoneNumber: conversation.leadPhoneNumber,
+      leadName: conversation.leadName,
       status: conversation.status,
       kanbanTitle: conversation.kanbanTitle,
       messages: messages.map((m: MessageHistoryEntity) => ({

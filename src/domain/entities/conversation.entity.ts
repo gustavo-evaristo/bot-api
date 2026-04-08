@@ -9,6 +9,7 @@ type ConversationEntityProps = {
   id?: string | UUID | null;
   kanbanId: string | UUID;
   leadPhoneNumber: string;
+  leadName?: string | null;
   status?: ConversationStatus | string | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
@@ -18,6 +19,7 @@ export class ConversationEntity {
   id: UUID;
   kanbanId: UUID;
   leadPhoneNumber: string;
+  leadName: string | null;
   status: ConversationStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +40,7 @@ export class ConversationEntity {
     }
 
     this.leadPhoneNumber = props.leadPhoneNumber;
+    this.leadName = props.leadName ?? null;
     this.status = (props.status as ConversationStatus) ?? ConversationStatus.ACTIVE;
 
     const createdAt = props.createdAt || new Date();
