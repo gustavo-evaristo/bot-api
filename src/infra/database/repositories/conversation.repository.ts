@@ -76,30 +76,33 @@ export class ConversationRepository implements IConversationRepository {
     };
 
     const rows = await this.prismaService.$queryRaw<Row[]>`
-      SELECT DISTINCT ON (c."leadPhoneNumber", c."kanbanId")
-        c.id,
-        c."leadPhoneNumber",
-        c."leadName",
-        c.status,
-        k.id           AS "kanbanId",
-        k.title        AS "kanbanTitle",
-        mh.content     AS "lastMessageContent",
-        mh.sender      AS "lastMessageSender",
-        mh."createdAt" AS "lastMessageSentAt",
-        c."createdAt",
-        c."updatedAt"
-      FROM conversations c
-      JOIN kanbans k ON k.id = c."kanbanId"
-      LEFT JOIN LATERAL (
-        SELECT content, sender, "createdAt"
-        FROM message_history
-        WHERE "conversationId" = c.id
-        ORDER BY "createdAt" DESC
-        LIMIT 1
-      ) mh ON true
-      WHERE k."userId" = ${userId}
-        AND k."isDeleted" = false
-      ORDER BY c."leadPhoneNumber", c."kanbanId", c."updatedAt" DESC
+      SELECT * FROM (
+        SELECT DISTINCT ON (c."leadPhoneNumber", c."kanbanId")
+          c.id,
+          c."leadPhoneNumber",
+          c."leadName",
+          c.status,
+          k.id           AS "kanbanId",
+          k.title        AS "kanbanTitle",
+          mh.content     AS "lastMessageContent",
+          mh.sender      AS "lastMessageSender",
+          mh."createdAt" AS "lastMessageSentAt",
+          c."createdAt",
+          c."updatedAt"
+        FROM conversations c
+        JOIN kanbans k ON k.id = c."kanbanId"
+        LEFT JOIN LATERAL (
+          SELECT content, sender, "createdAt"
+          FROM message_history
+          WHERE "conversationId" = c.id
+          ORDER BY "createdAt" DESC
+          LIMIT 1
+        ) mh ON true
+        WHERE k."userId" = ${userId}
+          AND k."isDeleted" = false
+        ORDER BY c."leadPhoneNumber", c."kanbanId", c."updatedAt" DESC
+      ) latest
+      ORDER BY COALESCE(latest."lastMessageSentAt", latest."updatedAt") DESC
     `;
 
     return rows.map((r) => ({
