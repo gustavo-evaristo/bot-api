@@ -40,9 +40,15 @@ export class GetConversationUseCase {
     if (conversation.kanbanUserId !== userId)
       throw new ForbiddenException('Acesso negado.');
 
+    const allConversationIds =
+      await this.conversationRepository.findIdsByLeadAndKanban(
+        conversation.kanbanId,
+        conversation.leadPhoneNumber,
+      );
+
     const messages =
-      await this.messageHistoryRepository.findManyByConversationId(
-        conversationId,
+      await this.messageHistoryRepository.findManyByConversationIds(
+        allConversationIds,
       );
 
     return {

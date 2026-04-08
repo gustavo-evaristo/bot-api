@@ -8,6 +8,7 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 const makeConversationDetail = (kanbanUserId: string) => ({
   id: 'conv-1',
+  kanbanId: 'k-1',
   leadPhoneNumber: '+5511999999999',
   leadName: null,
   status: 'ACTIVE',
@@ -30,8 +31,13 @@ describe('GetConversationUseCase', () => {
   let useCase: GetConversationUseCase;
 
   beforeEach(() => {
-    conversationRepository = { findById: vi.fn() } as unknown as IConversationRepository;
-    messageHistoryRepository = { findManyByConversationId: vi.fn() } as unknown as IMessageHistoryRepository;
+    conversationRepository = {
+      findById: vi.fn(),
+      findIdsByLeadAndKanban: vi.fn().mockResolvedValue(['conv-1']),
+    } as unknown as IConversationRepository;
+    messageHistoryRepository = {
+      findManyByConversationIds: vi.fn(),
+    } as unknown as IMessageHistoryRepository;
     useCase = new GetConversationUseCase(conversationRepository, messageHistoryRepository);
   });
 
@@ -45,12 +51,13 @@ describe('GetConversationUseCase', () => {
     await expect(useCase.execute({ conversationId: 'conv-1', userId: 'u-1' })).rejects.toThrow(ForbiddenException);
   });
 
-  it('should return conversation with mapped messages', async () => {
+  it('should return conversation with messages from all sessions', async () => {
     const userId = 'u-1';
     const detail = makeConversationDetail(userId);
     const messages = [makeMessage(MessageSender.BOT), makeMessage(MessageSender.LEAD)];
     vi.mocked(conversationRepository.findById).mockResolvedValue(detail);
-    vi.mocked(messageHistoryRepository.findManyByConversationId).mockResolvedValue(messages);
+    vi.mocked(conversationRepository.findIdsByLeadAndKanban).mockResolvedValue(['conv-1', 'conv-2']);
+    vi.mocked(messageHistoryRepository.findManyByConversationIds).mockResolvedValue(messages);
 
     const result = await useCase.execute({ conversationId: 'conv-1', userId });
 
@@ -59,12 +66,14 @@ describe('GetConversationUseCase', () => {
     expect(result.messages).toHaveLength(2);
     expect(result.messages[0].sender).toBe(MessageSender.BOT);
     expect(result.messages[1].sender).toBe(MessageSender.LEAD);
+    expect(conversationRepository.findIdsByLeadAndKanban).toHaveBeenCalledWith('k-1', '+5511999999999');
+    expect(messageHistoryRepository.findManyByConversationIds).toHaveBeenCalledWith(['conv-1', 'conv-2']);
   });
 
   it('should return empty messages array when no messages', async () => {
     const userId = 'u-1';
     vi.mocked(conversationRepository.findById).mockResolvedValue(makeConversationDetail(userId));
-    vi.mocked(messageHistoryRepository.findManyByConversationId).mockResolvedValue([]);
+    vi.mocked(messageHistoryRepository.findManyByConversationIds).mockResolvedValue([]);
 
     const result = await useCase.execute({ conversationId: 'conv-1', userId });
 

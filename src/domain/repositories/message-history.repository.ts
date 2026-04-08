@@ -5,4 +5,7 @@ export abstract class IMessageHistoryRepository {
   abstract findManyByConversationId(
     conversationId: string,
   ): Promise<MessageHistoryEntity[]>;
+  abstract findManyByConversationIds(
+    conversationIds: string[],
+  ): Promise<MessageHistoryEntity[]>;
 }

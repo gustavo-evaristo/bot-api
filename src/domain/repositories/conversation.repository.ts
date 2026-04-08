@@ -14,6 +14,7 @@ export interface ConversationSummary {
 
 export interface ConversationDetail {
   id: string;
+  kanbanId: string;
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
@@ -32,4 +33,8 @@ export abstract class IConversationRepository {
   abstract update(conversation: ConversationEntity): Promise<void>;
   abstract findManyByUserId(userId: string): Promise<ConversationSummary[]>;
   abstract findById(id: string): Promise<ConversationDetail | null>;
+  abstract findIdsByLeadAndKanban(
+    kanbanId: string,
+    leadPhoneNumber: string,
+  ): Promise<string[]>;
 }

@@ -42,4 +42,24 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
         }),
     );
   }
+
+  async findManyByConversationIds(
+    conversationIds: string[],
+  ): Promise<MessageHistoryEntity[]> {
+    const records = await this.prismaService.message_history.findMany({
+      where: { conversationId: { in: conversationIds } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return records.map(
+      (r) =>
+        new MessageHistoryEntity({
+          id: UUID.from(r.id),
+          conversationId: UUID.from(r.conversationId),
+          sender: r.sender as MessageSender,
+          content: r.content,
+          createdAt: r.createdAt,
+        }),
+    );
+  }
 }

@@ -61,33 +61,60 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   async findManyByUserId(userId: string): Promise<ConversationSummary[]> {
-    const records = await this.prismaService.conversations.findMany({
-      where: {
-        kanban: { userId, isDeleted: false },
-      },
-      include: {
-        kanban: { select: { id: true, title: true } },
-        messageHistory: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+    type Row = {
+      id: string;
+      leadPhoneNumber: string;
+      leadName: string | null;
+      status: string;
+      kanbanId: string;
+      kanbanTitle: string;
+      lastMessageContent: string | null;
+      lastMessageSender: string | null;
+      lastMessageSentAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
 
-    return records.map((r) => ({
+    const rows = await this.prismaService.$queryRaw<Row[]>`
+      SELECT DISTINCT ON (c."leadPhoneNumber", c."kanbanId")
+        c.id,
+        c."leadPhoneNumber",
+        c."leadName",
+        c.status,
+        k.id           AS "kanbanId",
+        k.title        AS "kanbanTitle",
+        mh.content     AS "lastMessageContent",
+        mh.sender      AS "lastMessageSender",
+        mh."createdAt" AS "lastMessageSentAt",
+        c."createdAt",
+        c."updatedAt"
+      FROM conversations c
+      JOIN kanbans k ON k.id = c."kanbanId"
+      LEFT JOIN LATERAL (
+        SELECT content, sender, "createdAt"
+        FROM message_history
+        WHERE "conversationId" = c.id
+        ORDER BY "createdAt" DESC
+        LIMIT 1
+      ) mh ON true
+      WHERE k."userId" = ${userId}
+        AND k."isDeleted" = false
+      ORDER BY c."leadPhoneNumber", c."kanbanId", c."updatedAt" DESC
+    `;
+
+    return rows.map((r) => ({
       id: r.id,
       leadPhoneNumber: r.leadPhoneNumber,
       leadName: r.leadName,
       status: r.status,
-      kanbanId: r.kanban.id,
-      kanbanTitle: r.kanban.title,
+      kanbanId: r.kanbanId,
+      kanbanTitle: r.kanbanTitle,
       lastMessage:
-        r.messageHistory.length > 0
+        r.lastMessageContent !== null && r.lastMessageSender !== null && r.lastMessageSentAt !== null
           ? {
-              content: r.messageHistory[0].content,
-              sender: r.messageHistory[0].sender,
-              sentAt: r.messageHistory[0].createdAt,
+              content: r.lastMessageContent,
+              sender: r.lastMessageSender,
+              sentAt: r.lastMessageSentAt,
             }
           : null,
       createdAt: r.createdAt,
@@ -107,6 +134,7 @@ export class ConversationRepository implements IConversationRepository {
 
     return {
       id: r.id,
+      kanbanId: r.kanbanId,
       leadPhoneNumber: r.leadPhoneNumber,
       leadName: r.leadName,
       status: r.status,
@@ -115,5 +143,17 @@ export class ConversationRepository implements IConversationRepository {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     };
+  }
+
+  async findIdsByLeadAndKanban(
+    kanbanId: string,
+    leadPhoneNumber: string,
+  ): Promise<string[]> {
+    const records = await this.prismaService.conversations.findMany({
+      where: { kanbanId, leadPhoneNumber },
+      select: { id: true },
+    });
+
+    return records.map((r) => r.id);
   }
 }
