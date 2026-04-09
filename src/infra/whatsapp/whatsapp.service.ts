@@ -16,6 +16,7 @@ const RECONNECT_BATCH_SIZE = 10;
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
   private sessions = new Map<string, WASocket>();
+  private stores = new Map<string, any>();
 
   constructor(
     private readonly gateway: WhatsappGateway,
@@ -52,16 +53,41 @@ export class WhatsappService implements OnModuleInit {
     const { state, saveCreds } = await useWhatsAppAuthState(userId, this.sessionRepository);
     const { version } = await fetchLatestBaileysVersion();
 
+    // Maps LID JID → phone JID (e.g. "258063227420919@lid" → "5511970256279@s.whatsapp.net")
+    const lidToPhone = new Map<string, string>();
+    this.stores.set(userId, lidToPhone);
+
+    const noopLogger = {
+      level: 'silent',
+      trace: () => {},
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      fatal: () => {},
+      child: () => noopLogger,
+    };
+
     const sock = makeWASocket({
       version,
       auth: state,
       printQRInTerminal: false,
-      logger: { level: 'silent' } as any,
+      logger: noopLogger as any,
     });
 
     this.sessions.set(userId, sock);
 
     sock.ev.on('creds.update', saveCreds);
+
+    const syncContacts = (contacts: { id: string; lid?: string }[]) => {
+      for (const contact of contacts) {
+        if (contact.lid && contact.id.endsWith('@s.whatsapp.net')) {
+          lidToPhone.set(contact.lid, contact.id);
+        }
+      }
+    };
+    sock.ev.on('contacts.upsert', syncContacts);
+    sock.ev.on('contacts.update', syncContacts as any);
 
     sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
       if (qr) {
@@ -85,6 +111,7 @@ export class WhatsappService implements OnModuleInit {
         if (loggedOut) {
           this.logger.log(`Sessão deslogada para ${userId}. Removendo sessão.`);
           await this.sessionRepository.delete(userId);
+          this.stores.delete(userId);
         } else {
           this.logger.log(`Conexão encerrada para ${userId} (código ${statusCode}). Reconectando...`);
           await this.startSession(userId).catch((err) =>
@@ -98,7 +125,7 @@ export class WhatsappService implements OnModuleInit {
       if (type !== 'notify') return;
 
       for (const message of messages) {
-        await this.handleIncomingMessage(userId, sock, message).catch((err) =>
+        await this.handleIncomingMessage(userId, sock, message, lidToPhone).catch((err) =>
           this.logger.error(`Erro ao processar mensagem:`, err),
         );
       }
@@ -127,9 +154,9 @@ export class WhatsappService implements OnModuleInit {
     });
   }
 
-  private async handleIncomingMessage(userId: string, sock: WASocket, message: any) {
+  private async handleIncomingMessage(userId: string, sock: WASocket, message: any, lidToPhone: Map<string, string>) {
     const jid = message.key?.remoteJid;
-    if (!jid || jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return;
+    if (!jid || jid.endsWith('@g.us') || jid.endsWith('@broadcast') || jid.endsWith('@newsletter')) return;
     if (message.key?.fromMe) return;
 
     const messageText =
@@ -139,7 +166,16 @@ export class WhatsappService implements OnModuleInit {
 
     if (!messageText || messageText.trim() === '') return;
 
-    const leadPhoneNumber = '+' + jid.replace('@s.whatsapp.net', '');
+    // Resolve phone number: @lid JIDs use an internal ID, not the real phone.
+    // Baileys provides the real JID in key.remoteJidAlt when addressingMode === "lid".
+    // Fall back to the contacts map built during sync, then to the raw JID.
+    let phoneJid = jid;
+    if (jid.endsWith('@lid')) {
+      phoneJid = message.key?.remoteJidAlt ?? lidToPhone.get(jid) ?? jid;
+    }
+    const rawNumber = phoneJid.split('@')[0];
+    if (!rawNumber || !/^\d+$/.test(rawNumber)) return;
+    const leadPhoneNumber = '+' + rawNumber;
     const botPhoneNumber = sock.user?.id
       ? '+' + sock.user.id.split(':')[0].split('@')[0]
       : '';
