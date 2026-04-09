@@ -6,6 +6,8 @@ type ConversationProgressEntityProps = {
   currentStageId: string;
   currentStageContentId: string;
   waitingForResponse?: boolean | null;
+  waitingForResponseSince?: Date | null;
+  followUpSentAt?: Date | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 };
@@ -16,6 +18,8 @@ export class ConversationProgressEntity {
   currentStageId: string;
   currentStageContentId: string;
   waitingForResponse: boolean;
+  waitingForResponseSince: Date | null;
+  followUpSentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -37,6 +41,8 @@ export class ConversationProgressEntity {
     this.currentStageId = props.currentStageId;
     this.currentStageContentId = props.currentStageContentId;
     this.waitingForResponse = props.waitingForResponse ?? false;
+    this.waitingForResponseSince = props.waitingForResponseSince ?? null;
+    this.followUpSentAt = props.followUpSentAt ?? null;
 
     const createdAt = props.createdAt || new Date();
     this.createdAt = createdAt;
@@ -51,11 +57,19 @@ export class ConversationProgressEntity {
     this.currentStageId = stageId;
     this.currentStageContentId = stageContentId;
     this.waitingForResponse = false;
+    this.waitingForResponseSince = null;
+    this.followUpSentAt = null;
     this.touch();
   }
 
   waitForResponse() {
     this.waitingForResponse = true;
+    this.waitingForResponseSince = new Date();
+    this.touch();
+  }
+
+  markFollowUpSent() {
+    this.followUpSentAt = new Date();
     this.touch();
   }
 }
