@@ -6,3 +6,4 @@ export * from './answer.repository';
 export * from './conversation.repository';
 export * from './conversation-progress.repository';
 export * from './lead-response.repository';
+export * from './analytics.repository';

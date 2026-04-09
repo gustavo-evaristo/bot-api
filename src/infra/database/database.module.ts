@@ -20,6 +20,8 @@ import { ILeadResponseRepository } from 'src/domain/repositories/lead-response.r
 import { LeadResponseRepository } from './repositories/lead-response.repository';
 import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
 import { MessageHistoryRepository } from './repositories/message-history.repository';
+import { IAnalyticsRepository } from 'src/domain/repositories/analytics.repository';
+import { AnalyticsRepository } from './repositories/analytics.repository';
 
 @Module({
   providers: [
@@ -60,6 +62,10 @@ import { MessageHistoryRepository } from './repositories/message-history.reposit
       provide: IMessageHistoryRepository,
       useClass: MessageHistoryRepository,
     },
+    {
+      provide: IAnalyticsRepository,
+      useClass: AnalyticsRepository,
+    },
   ],
   exports: [
     IUserRepository,
@@ -71,6 +77,7 @@ import { MessageHistoryRepository } from './repositories/message-history.reposit
     IConversationProgressRepository,
     ILeadResponseRepository,
     IMessageHistoryRepository,
+    IAnalyticsRepository,
   ],
 })
 export class DatabaseModule {}
