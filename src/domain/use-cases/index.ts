@@ -16,3 +16,4 @@ export * from './stage-content/update-stage-content.use-case';
 export * from './flow-engine/process-message.use-case';
 export * from './analytics/get-analytics.use-case';
 export * from './conversation/list-leads.use-case';
+export * from './conversation/send-message.use-case';

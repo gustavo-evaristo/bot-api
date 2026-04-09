@@ -35,6 +35,7 @@ export class WhatsappGateway {
   }
 
   sendNewMessage(userId: string, payload: NewMessagePayload) {
+    console.log('emitindo msg', payload.content);
     this.server.to(userId).emit('new_message', payload);
   }
 }

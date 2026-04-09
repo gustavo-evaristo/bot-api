@@ -10,5 +10,6 @@ import { AuthenticationModule } from '../authentication/authentication.module';
   imports: [DatabaseModule, AuthenticationModule],
   providers: [WhatsappService, WhatsappGateway, ProcessMessageUseCase],
   controllers: [WhatsappController],
+  exports: [WhatsappService],
 })
 export class WhatsappModule {}

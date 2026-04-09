@@ -38,6 +38,29 @@ export class WhatsappService implements OnModuleInit {
     }
   }
 
+  async sendMessage(
+    userId: string,
+    leadPhoneNumber: string,
+    content: string,
+    conversationId: string,
+  ): Promise<void> {
+    const client = this.sessions.get(userId);
+
+    if (!client) {
+      throw new Error('Sessão WhatsApp não está ativa. Conecte-se antes de enviar mensagens.');
+    }
+
+    const chatId = leadPhoneNumber.replace('+', '') + '@c.us';
+    await client.sendMessage(chatId, content);
+
+    this.gateway.sendNewMessage(userId, {
+      conversationId,
+      sender: 'BOT',
+      content,
+      createdAt: new Date(),
+    });
+  }
+
   async startSession(userId: string) {
     if (this.sessions.has(userId)) {
       console.log(`Sessão já existe para ${userId}`);
