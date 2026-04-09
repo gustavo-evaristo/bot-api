@@ -3,6 +3,7 @@ import {
   ConversationDetail,
   ConversationSummary,
   IConversationRepository,
+  LeadSummary,
 } from 'src/domain/repositories/conversation.repository';
 import {
   ConversationEntity,
@@ -146,6 +147,27 @@ export class ConversationRepository implements IConversationRepository {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     };
+  }
+
+  async findLeadsByUserId(userId: string): Promise<LeadSummary[]> {
+    const records = await this.prismaService.conversations.findMany({
+      where: {
+        kanban: {
+          userId,
+          isDeleted: false,
+        },
+      },
+      select: {
+        id: true,
+        leadPhoneNumber: true,
+        leadName: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return records;
   }
 
   async findIdsByLeadAndKanban(

@@ -12,6 +12,14 @@ export interface ConversationSummary {
   updatedAt: Date;
 }
 
+export interface LeadSummary {
+  id: string;
+  leadPhoneNumber: string;
+  leadName: string | null;
+  status: string;
+  createdAt: Date;
+}
+
 export interface ConversationDetail {
   id: string;
   kanbanId: string;
@@ -37,4 +45,5 @@ export abstract class IConversationRepository {
     kanbanId: string,
     leadPhoneNumber: string,
   ): Promise<string[]>;
+  abstract findLeadsByUserId(userId: string): Promise<LeadSummary[]>;
 }
