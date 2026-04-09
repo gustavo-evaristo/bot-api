@@ -1,41 +1,108 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Client, LocalAuth, Message } from 'whatsapp-web.js';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import type { WASocket } from '@whiskeysockets/baileys';
 import * as QRCode from 'qrcode';
-import * as fs from 'fs';
 import { WhatsappGateway } from './whatsapp.gateway';
 import { ProcessMessageUseCase } from 'src/domain/use-cases/flow-engine/process-message.use-case';
 import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
-import {
-  MessageHistoryEntity,
-  MessageSender,
-} from 'src/domain/entities/message-history.entity';
+import { MessageHistoryEntity, MessageSender } from 'src/domain/entities/message-history.entity';
 import { UUID } from 'src/domain/entities/vos';
+import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
+import { loadBaileys } from './baileys.loader';
+import { useWhatsAppAuthState } from './whatsapp-auth-state';
+
+const RECONNECT_BATCH_SIZE = 10;
 
 @Injectable()
 export class WhatsappService implements OnModuleInit {
-  private sessions = new Map<string, Client>();
+  private readonly logger = new Logger(WhatsappService.name);
+  private sessions = new Map<string, WASocket>();
 
   constructor(
     private readonly gateway: WhatsappGateway,
     private readonly processMessageUseCase: ProcessMessageUseCase,
     private readonly messageHistoryRepository: IMessageHistoryRepository,
+    private readonly sessionRepository: IWhatsAppSessionRepository,
   ) {}
 
   async onModuleInit() {
-    const authDir = '.wwebjs_auth';
-    if (!fs.existsSync(authDir)) return;
+    const userIds = await this.sessionRepository.findAllUserIds();
+    if (userIds.length === 0) return;
 
-    const dirs = fs.readdirSync(authDir);
+    this.logger.log(`Restaurando ${userIds.length} sessão(ões) WhatsApp...`);
 
-    for (const dir of dirs) {
-      if (dir.startsWith('session-')) {
-        const userId = dir.replace('session-', '');
-        console.log(`Restaurando sessão WhatsApp para usuário: ${userId}`);
-        this.startSession(userId).catch((err) =>
-          console.error(`Erro ao restaurar sessão ${userId}:`, err),
+    for (let i = 0; i < userIds.length; i += RECONNECT_BATCH_SIZE) {
+      const batch = userIds.slice(i, i + RECONNECT_BATCH_SIZE);
+      await Promise.all(
+        batch.map((userId) =>
+          this.startSession(userId).catch((err) =>
+            this.logger.error(`Erro ao restaurar sessão ${userId}:`, err),
+          ),
+        ),
+      );
+    }
+  }
+
+  async startSession(userId: string): Promise<void> {
+    if (this.sessions.has(userId)) {
+      this.logger.log(`Sessão já existe para ${userId}`);
+      return;
+    }
+
+    const { makeWASocket, DisconnectReason, fetchLatestBaileysVersion } = await loadBaileys();
+    const { state, saveCreds } = await useWhatsAppAuthState(userId, this.sessionRepository);
+    const { version } = await fetchLatestBaileysVersion();
+
+    const sock = makeWASocket({
+      version,
+      auth: state,
+      printQRInTerminal: false,
+      logger: { level: 'silent' } as any,
+    });
+
+    this.sessions.set(userId, sock);
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
+      if (qr) {
+        const qrImage = await QRCode.toDataURL(qr);
+        this.gateway.sendQrToUser(userId, qrImage);
+      }
+
+      if (connection === 'open') {
+        const phone = sock.user?.id?.split(':')[0]?.split('@')[0];
+        this.logger.log(`WhatsApp conectado! Número: ${phone} (userId: ${userId})`);
+        this.gateway.sendStatusToUser(userId, 'CONNECTED');
+      }
+
+      if (connection === 'close') {
+        this.sessions.delete(userId);
+        this.gateway.sendStatusToUser(userId, 'DISCONNECTED');
+
+        const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+        const loggedOut = statusCode === DisconnectReason.loggedOut;
+
+        if (loggedOut) {
+          this.logger.log(`Sessão deslogada para ${userId}. Removendo sessão.`);
+          await this.sessionRepository.delete(userId);
+        } else {
+          this.logger.log(`Conexão encerrada para ${userId} (código ${statusCode}). Reconectando...`);
+          await this.startSession(userId).catch((err) =>
+            this.logger.error(`Erro ao reconectar ${userId}:`, err),
+          );
+        }
+      }
+    });
+
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+      if (type !== 'notify') return;
+
+      for (const message of messages) {
+        await this.handleIncomingMessage(userId, sock, message).catch((err) =>
+          this.logger.error(`Erro ao processar mensagem:`, err),
         );
       }
-    }
+    });
   }
 
   async sendMessage(
@@ -44,14 +111,13 @@ export class WhatsappService implements OnModuleInit {
     content: string,
     conversationId: string,
   ): Promise<void> {
-    const client = this.sessions.get(userId);
-
-    if (!client) {
+    const sock = this.sessions.get(userId);
+    if (!sock) {
       throw new Error('Sessão WhatsApp não está ativa. Conecte-se antes de enviar mensagens.');
     }
 
-    const chatId = leadPhoneNumber.replace('+', '') + '@c.us';
-    await client.sendMessage(chatId, content);
+    const jid = leadPhoneNumber.replace('+', '') + '@s.whatsapp.net';
+    await sock.sendMessage(jid, { text: content });
 
     this.gateway.sendNewMessage(userId, {
       conversationId,
@@ -61,110 +127,72 @@ export class WhatsappService implements OnModuleInit {
     });
   }
 
-  async startSession(userId: string) {
-    if (this.sessions.has(userId)) {
-      console.log(`Sessão já existe para ${userId}`);
-      return;
-    }
+  private async handleIncomingMessage(userId: string, sock: WASocket, message: any) {
+    const jid = message.key?.remoteJid;
+    if (!jid || jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return;
+    if (message.key?.fromMe) return;
 
-    const client = new Client({
-      authStrategy: new LocalAuth({ clientId: userId }),
-      puppeteer: { headless: true },
-    });
+    const messageText =
+      message.message?.conversation ||
+      message.message?.extendedTextMessage?.text ||
+      null;
 
-    this.sessions.set(userId, client);
+    if (!messageText || messageText.trim() === '') return;
 
-    client.on('qr', async (qr) => {
-      const qrImage = await QRCode.toDataURL(qr);
-      console.log(qrImage);
-      this.gateway.sendQrToUser(userId, qrImage);
-    });
+    const leadPhoneNumber = '+' + jid.replace('@s.whatsapp.net', '');
+    const botPhoneNumber = sock.user?.id
+      ? '+' + sock.user.id.split(':')[0].split('@')[0]
+      : '';
+    const leadName = message.pushName || null;
 
-    client.on('ready', () => {
-      this.gateway.sendStatusToUser(userId, 'CONNECTED');
-      const phone = client.info?.wid?.user;
-      console.log(`WhatsApp conectado! Número: ${phone}`);
-    });
-
-    client.on('message', async (message: Message) => {
-      await this.handleIncomingMessage(client, message);
-    });
-
-    client.on('disconnected', (reason) => {
-      console.log(`WhatsApp desconectado para ${userId}`, reason);
-      this.gateway.sendStatusToUser(userId, 'DISCONNECTED');
-      this.sessions.delete(userId);
-    });
-
-    await client.initialize();
-  }
-
-  private async handleIncomingMessage(client: Client, message: Message) {
-    if (message.from.endsWith('@g.us')) return;
-    if (!message.body || message.body.trim() === '') return;
-
-    const contact = await message.getContact();
-    const leadPhoneNumber = '+' + contact.number;
-    const botPhoneNumber = '+' + client.info.wid.user;
-    const messageText = message.body;
-    const leadName = contact.name || contact.pushname || null;
-
-    console.log(
-      `Mensagem recebida de nome: ${leadName}, número: ${leadPhoneNumber} para ${botPhoneNumber}: ${messageText}`,
+    this.logger.log(
+      `Mensagem de ${leadName ?? leadPhoneNumber} → ${botPhoneNumber}: ${messageText}`,
     );
 
-    try {
-      const { conversationId, userId, messagesToSend } =
-        await this.processMessageUseCase.execute({
-          botPhoneNumber,
-          leadPhoneNumber,
-          messageText,
-          leadName,
-        });
+    const { conversationId, userId: resolvedUserId, messagesToSend } =
+      await this.processMessageUseCase.execute({
+        botPhoneNumber,
+        leadPhoneNumber,
+        messageText,
+        leadName,
+      });
 
-      if (conversationId && userId) {
-        const leadCreatedAt = new Date();
+    if (conversationId && resolvedUserId) {
+      await this.messageHistoryRepository.create(
+        new MessageHistoryEntity({
+          conversationId: UUID.from(conversationId),
+          sender: MessageSender.LEAD,
+          content: messageText,
+        }),
+      );
 
+      this.gateway.sendNewMessage(resolvedUserId, {
+        conversationId,
+        sender: 'LEAD',
+        content: messageText,
+        createdAt: new Date(),
+      });
+    }
+
+    for (const text of messagesToSend) {
+      await sock.sendMessage(jid, { text });
+
+      if (conversationId && resolvedUserId) {
         await this.messageHistoryRepository.create(
           new MessageHistoryEntity({
             conversationId: UUID.from(conversationId),
-            sender: MessageSender.LEAD,
-            content: messageText,
+            sender: MessageSender.BOT,
+            content: text,
           }),
         );
 
-        this.gateway.sendNewMessage(userId, {
+        this.gateway.sendNewMessage(resolvedUserId, {
           conversationId,
-          sender: 'LEAD',
-          content: messageText,
-          createdAt: leadCreatedAt,
+          sender: 'BOT',
+          content: text,
+          createdAt: new Date(),
         });
       }
-
-      for (const text of messagesToSend) {
-        await client.sendMessage(message.from, text);
-
-        if (conversationId && userId) {
-          const botCreatedAt = new Date();
-
-          await this.messageHistoryRepository.create(
-            new MessageHistoryEntity({
-              conversationId: UUID.from(conversationId),
-              sender: MessageSender.BOT,
-              content: text,
-            }),
-          );
-
-          this.gateway.sendNewMessage(userId, {
-            conversationId,
-            sender: 'BOT',
-            content: text,
-            createdAt: botCreatedAt,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao processar mensagem:', error);
     }
   }
 }

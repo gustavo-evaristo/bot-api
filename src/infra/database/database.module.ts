@@ -22,6 +22,8 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import { MessageHistoryRepository } from './repositories/message-history.repository';
 import { IAnalyticsRepository } from 'src/domain/repositories/analytics.repository';
 import { AnalyticsRepository } from './repositories/analytics.repository';
+import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
+import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repository';
 
 @Module({
   providers: [
@@ -66,6 +68,10 @@ import { AnalyticsRepository } from './repositories/analytics.repository';
       provide: IAnalyticsRepository,
       useClass: AnalyticsRepository,
     },
+    {
+      provide: IWhatsAppSessionRepository,
+      useClass: WhatsAppSessionRepository,
+    },
   ],
   exports: [
     IUserRepository,
@@ -78,6 +84,7 @@ import { AnalyticsRepository } from './repositories/analytics.repository';
     ILeadResponseRepository,
     IMessageHistoryRepository,
     IAnalyticsRepository,
+    IWhatsAppSessionRepository,
   ],
 })
 export class DatabaseModule {}
