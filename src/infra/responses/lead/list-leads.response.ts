@@ -13,6 +13,12 @@ export class LeadItemResponse {
   @ApiProperty({ example: 'FINISHED', enum: ['ACTIVE', 'FINISHED'] })
   status: string;
 
+  @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' })
+  kanbanId: string;
+
+  @ApiProperty({ example: 'Fluxo de cadastro' })
+  kanbanTitle: string;
+
   @ApiProperty({ example: new Date().toISOString() })
   createdAt: Date;
 }

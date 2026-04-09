@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { subHours } from 'date-fns';
 import { ProcessMessageUseCase } from './process-message.use-case';
 import { IKanbanRepository } from 'src/domain/repositories/kanban.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
 import { ILeadResponseRepository } from 'src/domain/repositories/lead-response.repository';
 import { KanbanEntity } from 'src/domain/entities/kanban.entity';
-import { ConversationEntity } from 'src/domain/entities/conversation.entity';
+import { ConversationEntity, ConversationStatus } from 'src/domain/entities/conversation.entity';
 import { ConversationProgressEntity } from 'src/domain/entities/conversation-progress.entity';
 import { ContentType } from 'src/domain/entities/stage-content.entity';
 import { UUID } from 'src/domain/entities/vos';
@@ -17,7 +18,7 @@ const makeKanban = () =>
     userId: UUID.generate().toString(),
     title: 'Test Kanban',
     description: 'Desc',
-    phoneNumber: '5511999999999',
+    phoneNumber: '5511000000000',
     isActive: true,
   });
 
@@ -71,6 +72,7 @@ describe('ProcessMessageUseCase', () => {
     conversationRepository = {
       create: vi.fn(),
       findActive: vi.fn(),
+      findLastFinished: vi.fn().mockResolvedValue(null),
       update: vi.fn(),
     } as unknown as IConversationRepository;
 
@@ -98,7 +100,7 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(null);
 
     const { messagesToSend } = await useCase.execute({
-      phoneNumber: '5511000000000',
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511000000000',
       messageText: 'Hello',
     });
 
@@ -124,7 +126,7 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(conversationRepository.update).mockResolvedValue();
 
     const { messagesToSend } = await useCase.execute({
-      phoneNumber: '5511999999999',
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
       messageText: 'Hello',
     });
 
@@ -149,7 +151,7 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(progressRepository.update).mockResolvedValue();
 
     const { messagesToSend } = await useCase.execute({
-      phoneNumber: '5511999999999',
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
       messageText: 'Hi',
     });
 
@@ -179,7 +181,7 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(progressRepository.update).mockResolvedValue();
 
     const { messagesToSend } = await useCase.execute({
-      phoneNumber: '5511999999999',
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
       messageText: 'Hi',
     });
 
@@ -209,7 +211,7 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(conversationRepository.update).mockResolvedValue();
 
     const { messagesToSend } = await useCase.execute({
-      phoneNumber: '5511999999999',
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
       messageText: 'I want to know more!',
     });
 
@@ -244,7 +246,7 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(progressRepository.update).mockResolvedValue();
     vi.mocked(conversationRepository.update).mockResolvedValue();
 
-    await useCase.execute({ phoneNumber: '5511999999999', messageText: 'Yes' });
+    await useCase.execute({ botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999', messageText: 'Yes' });
 
     const savedResponse = vi.mocked(leadResponseRepository.create).mock.calls[0][0];
     expect(savedResponse.answerId).toBe('a1');
@@ -267,9 +269,88 @@ describe('ProcessMessageUseCase', () => {
     vi.mocked(leadResponseRepository.create).mockResolvedValue();
     vi.mocked(conversationRepository.update).mockResolvedValue();
 
-    await useCase.execute({ phoneNumber: '5511999999999', messageText: 'Final answer' });
+    await useCase.execute({ botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999', messageText: 'Final answer' });
 
     const updatedConversation = vi.mocked(conversationRepository.update).mock.calls[0][0];
     expect(updatedConversation.isActive()).toBe(false);
+  });
+
+  // ---- 24h cooldown after FINISHED ----
+
+  it('should not start a new flow when lead messages within 24h of finishing', async () => {
+    const kanban = makeKanban();
+    const details = makeDetails([{ id: 'c1', contentType: ContentType.TEXT }]);
+
+    const finishedConversation = new ConversationEntity({
+      kanbanId: kanban.id.toString(),
+      leadPhoneNumber: '5511999999999',
+      status: ConversationStatus.FINISHED,
+      updatedAt: subHours(new Date(), 2), // finished 2h ago
+    });
+
+    vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
+    vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(null);
+    vi.mocked(conversationRepository.findLastFinished).mockResolvedValue(finishedConversation);
+
+    const { conversationId, messagesToSend } = await useCase.execute({
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
+      messageText: 'Tenho uma dúvida',
+    });
+
+    expect(conversationId).toBe(finishedConversation.id.toString());
+    expect(messagesToSend).toHaveLength(0);
+    expect(conversationRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should start a new flow when lead messages after the 24h cooldown', async () => {
+    const kanban = makeKanban();
+    const details = makeDetails([{ id: 'c1', contentType: ContentType.TEXT }]);
+
+    const finishedConversation = new ConversationEntity({
+      kanbanId: kanban.id.toString(),
+      leadPhoneNumber: '5511999999999',
+      status: ConversationStatus.FINISHED,
+      updatedAt: subHours(new Date(), 25), // finished 25h ago
+    });
+
+    vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
+    vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(null);
+    vi.mocked(conversationRepository.findLastFinished).mockResolvedValue(finishedConversation);
+    vi.mocked(conversationRepository.create).mockResolvedValue();
+    vi.mocked(progressRepository.create).mockResolvedValue();
+    vi.mocked(progressRepository.update).mockResolvedValue();
+    vi.mocked(conversationRepository.update).mockResolvedValue();
+
+    const { messagesToSend } = await useCase.execute({
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
+      messageText: 'Olá novamente',
+    });
+
+    expect(conversationRepository.create).toHaveBeenCalledOnce();
+    expect(messagesToSend).toHaveLength(1);
+  });
+
+  it('should start a new flow when there is no previous finished conversation', async () => {
+    const kanban = makeKanban();
+    const details = makeDetails([{ id: 'c1', contentType: ContentType.TEXT }]);
+
+    vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
+    vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(null);
+    vi.mocked(conversationRepository.findLastFinished).mockResolvedValue(null);
+    vi.mocked(conversationRepository.create).mockResolvedValue();
+    vi.mocked(progressRepository.create).mockResolvedValue();
+    vi.mocked(progressRepository.update).mockResolvedValue();
+    vi.mocked(conversationRepository.update).mockResolvedValue();
+
+    const { messagesToSend } = await useCase.execute({
+      botPhoneNumber: '5511000000000', leadPhoneNumber: '5511999999999',
+      messageText: 'Oi',
+    });
+
+    expect(conversationRepository.create).toHaveBeenCalledOnce();
+    expect(messagesToSend).toHaveLength(1);
   });
 });

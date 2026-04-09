@@ -17,6 +17,8 @@ export interface LeadSummary {
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
+  kanbanId: string;
+  kanbanTitle: string;
   createdAt: Date;
 }
 
@@ -46,4 +48,8 @@ export abstract class IConversationRepository {
     leadPhoneNumber: string,
   ): Promise<string[]>;
   abstract findLeadsByUserId(userId: string): Promise<LeadSummary[]>;
+  abstract findLastFinished(
+    kanbanId: string,
+    leadPhoneNumber: string,
+  ): Promise<ConversationEntity | null>;
 }

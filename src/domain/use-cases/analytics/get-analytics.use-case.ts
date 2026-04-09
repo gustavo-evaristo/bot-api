@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { startOfWeek, endOfWeek } from 'date-fns';
 import { IAnalyticsRepository } from 'src/domain/repositories/analytics.repository';
 
 interface Input {
@@ -16,16 +17,8 @@ export class GetAnalyticsUseCase {
 
   private getCurrentWeekBounds(): { weekStart: Date; weekEnd: Date } {
     const now = new Date();
-    const offsetFromMonday = (now.getUTCDay() + 6) % 7;
-
-    const weekStart = new Date(now);
-    weekStart.setUTCHours(0, 0, 0, 0);
-    weekStart.setUTCDate(now.getUTCDate() - offsetFromMonday);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
-    weekEnd.setUTCHours(23, 59, 59, 999);
-
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
     return { weekStart, weekEnd };
   }
 }

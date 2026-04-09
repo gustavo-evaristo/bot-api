@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isAfter, subHours } from 'date-fns';
 import { IKanbanRepository } from 'src/domain/repositories/kanban.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
@@ -74,8 +75,20 @@ export class ProcessMessageUseCase {
       leadPhoneNumber,
     );
 
-    // Nova conversa: iniciar do primeiro StageContent
+    // Nova conversa: verificar cooldown de 24h antes de reiniciar o fluxo
     if (!conversation) {
+      const lastFinished = await this.conversationRepository.findLastFinished(
+        kanban.id.toString(),
+        leadPhoneNumber,
+      );
+
+      if (lastFinished && isAfter(lastFinished.updatedAt, subHours(new Date(), 24))) {
+        return {
+          conversationId: lastFinished.id.toString(),
+          messagesToSend: [],
+        };
+      }
+
       conversation = new ConversationEntity({
         kanbanId: kanban.id,
         leadPhoneNumber: leadPhoneNumber,

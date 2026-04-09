@@ -150,24 +150,54 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   async findLeadsByUserId(userId: string): Promise<LeadSummary[]> {
-    const records = await this.prismaService.conversations.findMany({
-      where: {
-        kanban: {
-          userId,
-          isDeleted: false,
-        },
-      },
-      select: {
-        id: true,
-        leadPhoneNumber: true,
-        leadName: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
+    type Row = {
+      id: string;
+      leadPhoneNumber: string;
+      leadName: string | null;
+      status: string;
+      kanbanId: string;
+      kanbanTitle: string;
+      createdAt: Date;
+    };
+
+    const rows = await this.prismaService.$queryRaw<Row[]>`
+      SELECT * FROM (
+        SELECT DISTINCT ON (c."leadPhoneNumber", c."kanbanId")
+          c.id,
+          c."leadPhoneNumber",
+          c."leadName",
+          c.status,
+          k.id    AS "kanbanId",
+          k.title AS "kanbanTitle",
+          c."createdAt"
+        FROM conversations c
+        JOIN kanbans k ON k.id = c."kanbanId"
+        WHERE k."userId" = ${userId}
+          AND k."isDeleted" = false
+        ORDER BY c."leadPhoneNumber", c."kanbanId", c."updatedAt" DESC
+      ) leads
+      ORDER BY leads."createdAt" DESC
+    `;
+
+    return rows;
+  }
+
+  async findLastFinished(
+    kanbanId: string,
+    leadPhoneNumber: string,
+  ): Promise<ConversationEntity | null> {
+    const r = await this.prismaService.conversations.findFirst({
+      where: { kanbanId, leadPhoneNumber, status: ConversationStatus.FINISHED },
+      orderBy: { updatedAt: 'desc' },
     });
 
-    return records;
+    if (!r) return null;
+
+    return new ConversationEntity({
+      ...r,
+      id: UUID.from(r.id),
+      kanbanId: UUID.from(r.kanbanId),
+    });
   }
 
   async findIdsByLeadAndKanban(

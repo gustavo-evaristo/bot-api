@@ -20,6 +20,8 @@ describe('ListLeadsUseCase', () => {
         leadPhoneNumber: '+5511999999999',
         leadName: 'Maria Silva',
         status: 'FINISHED',
+        kanbanId: 'k-1',
+        kanbanTitle: 'Fluxo de cadastro',
         createdAt: new Date('2026-04-01T10:00:00Z'),
       },
       {
@@ -27,6 +29,8 @@ describe('ListLeadsUseCase', () => {
         leadPhoneNumber: '+5511888888888',
         leadName: null,
         status: 'ACTIVE',
+        kanbanId: 'k-2',
+        kanbanTitle: 'Fluxo de vendas',
         createdAt: new Date('2026-04-07T08:00:00Z'),
       },
     ];
