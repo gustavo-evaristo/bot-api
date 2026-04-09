@@ -130,7 +130,7 @@ export class ProcessMessageUseCase {
     let answerId: string | null = null;
     let score: number | null = null;
 
-    if (currentContent.contentType === ContentType.MULTIPLE_CHOICE) {
+    if (currentContent.contentType === ContentType.MULTIPLE_CHOICE && currentContent.answers.length > 0) {
       const trimmed = messageText.trim();
       const indexMatch = parseInt(trimmed, 10);
       const matched = currentContent.answers.find((a, i) =>
