@@ -153,6 +153,16 @@ export class WhatsappService implements OnModuleInit {
     });
   }
 
+  private normalizeBrazilianPhone(phone: string): string {
+    const digits = phone.replace('+', '');
+    // Número brasileiro sem o 9 extra: +55 + 2 dígitos DDD + 8 dígitos = 12 dígitos
+    // Formato correto (celular):         +55 + 2 dígitos DDD + 9 dígitos = 13 dígitos
+    if (digits.startsWith('55') && digits.length === 12) {
+      return '+' + digits.slice(0, 4) + '9' + digits.slice(4);
+    }
+    return phone;
+  }
+
   private async handleIncomingMessage(userId: string, sock: WASocket, message: any, lidToPhone: Map<string, string>) {
     const jid = message.key?.remoteJid;
     if (!jid || jid.endsWith('@g.us') || jid.endsWith('@broadcast') || jid.endsWith('@newsletter')) return;
@@ -174,11 +184,13 @@ export class WhatsappService implements OnModuleInit {
     }
     const rawNumber = phoneJid.split('@')[0];
     if (!rawNumber || !/^\d+$/.test(rawNumber)) return;
-    const leadPhoneNumber = '+' + rawNumber;
+    const leadPhoneNumber = this.normalizeBrazilianPhone('+' + rawNumber);
     const botPhoneNumber = sock.user?.id
-      ? '+' + sock.user.id.split(':')[0].split('@')[0]
+      ? this.normalizeBrazilianPhone('+' + sock.user.id.split(':')[0].split('@')[0])
       : '';
     const leadName = message.pushName || null;
+
+    this.logger.log(`Mensagem recebida — bot: ${botPhoneNumber} | lead: ${leadPhoneNumber} | texto: "${messageText}"`);
 
     const { conversationId, userId: resolvedUserId, messagesToSend } =
       await this.processMessageUseCase.execute({
