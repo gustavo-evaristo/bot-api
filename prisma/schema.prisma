@@ -133,8 +133,8 @@ model lead_responses {
 model whatsapp_sessions {
   id        String   @id @default(uuid())
   userId    String   @unique
-  creds     String
-  keys      String   @default("{}")
+  creds     String?
+  keys      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

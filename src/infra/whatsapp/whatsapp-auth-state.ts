@@ -1,5 +1,6 @@
 import type { AuthenticationState, SignalDataTypeMap } from '@whiskeysockets/baileys';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
+import { WhatsAppSessionEntity } from 'src/domain/entities/whatsapp-session.entity';
 import { loadBaileys } from './baileys.loader';
 
 export async function useWhatsAppAuthState(
@@ -18,12 +19,14 @@ export async function useWhatsAppAuthState(
     ? JSON.parse(stored.keys, BufferJSON.reviver)
     : {};
 
+  const session = stored ?? new WhatsAppSessionEntity({ userId });
+
   const persist = async () => {
-    await repository.save(
-      userId,
+    session.updateState(
       JSON.stringify(creds, BufferJSON.replacer),
       JSON.stringify(keys, BufferJSON.replacer),
     );
+    await repository.save(session);
   };
 
   return {

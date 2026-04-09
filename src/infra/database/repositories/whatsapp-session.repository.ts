@@ -1,22 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
+import { WhatsAppSessionEntity } from 'src/domain/entities/whatsapp-session.entity';
+import { UUID } from 'src/domain/entities/vos';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class WhatsAppSessionRepository implements IWhatsAppSessionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByUserId(userId: string): Promise<{ creds: string; keys: string } | null> {
+  async findByUserId(userId: string): Promise<WhatsAppSessionEntity | null> {
     const record = await this.prisma.whatsapp_sessions.findUnique({ where: { userId } });
     if (!record) return null;
-    return { creds: record.creds, keys: record.keys };
+
+    return new WhatsAppSessionEntity({
+      id: UUID.from(record.id),
+      userId: UUID.from(record.userId),
+      creds: record.creds,
+      keys: record.keys,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    });
   }
 
-  async save(userId: string, creds: string, keys: string): Promise<void> {
+  async save(session: WhatsAppSessionEntity): Promise<void> {
     await this.prisma.whatsapp_sessions.upsert({
-      where: { userId },
-      create: { userId, creds, keys },
-      update: { creds, keys },
+      where: { userId: session.userId.toString() },
+      create: {
+        id: session.id.toString(),
+        userId: session.userId.toString(),
+        creds: session.creds,
+        keys: session.keys,
+      },
+      update: {
+        creds: session.creds,
+        keys: session.keys,
+      },
     });
   }
 
