@@ -45,7 +45,6 @@ export class WhatsappService implements OnModuleInit {
 
   async startSession(userId: string): Promise<void> {
     if (this.sessions.has(userId)) {
-      this.logger.log(`Sessão já existe para ${userId}`);
       return;
     }
 
@@ -181,10 +180,6 @@ export class WhatsappService implements OnModuleInit {
       : '';
     const leadName = message.pushName || null;
 
-    this.logger.log(
-      `Mensagem de ${leadName ?? leadPhoneNumber} → ${botPhoneNumber}: ${messageText}`,
-    );
-
     const { conversationId, userId: resolvedUserId, messagesToSend } =
       await this.processMessageUseCase.execute({
         botPhoneNumber,
@@ -192,6 +187,11 @@ export class WhatsappService implements OnModuleInit {
         messageText,
         leadName,
       });
+
+    if (!resolvedUserId) {
+      this.logger.warn(`Nenhum kanban ativo para o número ${botPhoneNumber}. Mensagem de ${leadPhoneNumber} ignorada.`);
+      return;
+    }
 
     if (conversationId && resolvedUserId) {
       await this.messageHistoryRepository.create(

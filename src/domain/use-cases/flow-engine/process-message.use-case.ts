@@ -54,16 +54,8 @@ export class ProcessMessageUseCase {
   async execute({ botPhoneNumber, leadPhoneNumber, messageText, leadName }: Input): Promise<Output> {
     const kanban = await this.kanbanRepository.findByPhoneNumber(botPhoneNumber);
 
-    console.log({ botPhoneNumber, leadPhoneNumber, messageText });
-
     if (!kanban) {
-      return {
-        conversationId: null,
-        userId: null,
-        messagesToSend: [
-          'Olá! No momento não há atendimento configurado para este número.',
-        ],
-      };
+      return { conversationId: null, userId: null, messagesToSend: [] };
     }
 
     const userId = kanban.userId.toString();
