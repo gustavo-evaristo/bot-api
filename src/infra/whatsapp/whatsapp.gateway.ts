@@ -3,6 +3,13 @@
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
+export interface NewMessagePayload {
+  conversationId: string;
+  sender: 'BOT' | 'LEAD';
+  content: string;
+  createdAt: Date;
+}
+
 @WebSocketGateway({
   cors: { origin: '*' },
 })
@@ -25,5 +32,9 @@ export class WhatsappGateway {
 
   sendStatusToUser(userId: string, status: string) {
     this.server.to(userId).emit('status', status);
+  }
+
+  sendNewMessage(userId: string, payload: NewMessagePayload) {
+    this.server.to(userId).emit('new_message', payload);
   }
 }

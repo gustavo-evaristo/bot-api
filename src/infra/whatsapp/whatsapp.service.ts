@@ -91,7 +91,7 @@ export class WhatsappService implements OnModuleInit {
     );
 
     try {
-      const { conversationId, messagesToSend } =
+      const { conversationId, userId, messagesToSend } =
         await this.processMessageUseCase.execute({
           botPhoneNumber,
           leadPhoneNumber,
@@ -99,7 +99,9 @@ export class WhatsappService implements OnModuleInit {
           leadName,
         });
 
-      if (conversationId) {
+      if (conversationId && userId) {
+        const leadCreatedAt = new Date();
+
         await this.messageHistoryRepository.create(
           new MessageHistoryEntity({
             conversationId: UUID.from(conversationId),
@@ -107,12 +109,21 @@ export class WhatsappService implements OnModuleInit {
             content: messageText,
           }),
         );
+
+        this.gateway.sendNewMessage(userId, {
+          conversationId,
+          sender: 'LEAD',
+          content: messageText,
+          createdAt: leadCreatedAt,
+        });
       }
 
       for (const text of messagesToSend) {
         await client.sendMessage(message.from, text);
 
-        if (conversationId) {
+        if (conversationId && userId) {
+          const botCreatedAt = new Date();
+
           await this.messageHistoryRepository.create(
             new MessageHistoryEntity({
               conversationId: UUID.from(conversationId),
@@ -120,6 +131,13 @@ export class WhatsappService implements OnModuleInit {
               content: text,
             }),
           );
+
+          this.gateway.sendNewMessage(userId, {
+            conversationId,
+            sender: 'BOT',
+            content: text,
+            createdAt: botCreatedAt,
+          });
         }
       }
     } catch (error) {
