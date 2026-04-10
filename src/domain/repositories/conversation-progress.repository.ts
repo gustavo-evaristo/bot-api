@@ -13,5 +13,7 @@ export abstract class IConversationProgressRepository {
     conversationId: string,
   ): Promise<ConversationProgressEntity | null>;
   abstract update(progress: ConversationProgressEntity): Promise<void>;
-  abstract findPendingFollowUps(thresholdMinutes: number): Promise<PendingFollowUp[]>;
+  abstract findPendingFollowUps(
+    thresholdMinutes: number,
+  ): Promise<PendingFollowUp[]>;
 }

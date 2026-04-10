@@ -58,7 +58,9 @@ describe('MessageHistoryEntity', () => {
         content: 'Hi',
       });
       expect(entity.createdAt).toBeInstanceOf(Date);
-      expect(entity.createdAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(entity.createdAt.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
     });
 
     it('should use provided createdAt', () => {

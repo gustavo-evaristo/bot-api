@@ -5,11 +5,13 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import { MessageSender } from 'src/domain/entities/message-history.entity';
 import { ConversationStatus } from 'src/domain/entities/conversation.entity';
 
-const makeConversationDetail = (overrides: Partial<{
-  status: string;
-  kanbanUserId: string;
-  leadPhoneNumber: string;
-}> = {}) => ({
+const makeConversationDetail = (
+  overrides: Partial<{
+    status: string;
+    kanbanUserId: string;
+    leadPhoneNumber: string;
+  }> = {},
+) => ({
   id: 'conv-1',
   kanbanId: 'k-1',
   leadPhoneNumber: '+5511999999999',
@@ -36,11 +38,16 @@ describe('SendMessageUseCase', () => {
       create: vi.fn(),
     } as unknown as IMessageHistoryRepository;
 
-    useCase = new SendMessageUseCase(conversationRepository, messageHistoryRepository);
+    useCase = new SendMessageUseCase(
+      conversationRepository,
+      messageHistoryRepository,
+    );
   });
 
   it('should save message to history and return leadPhoneNumber', async () => {
-    vi.mocked(conversationRepository.findById).mockResolvedValue(makeConversationDetail());
+    vi.mocked(conversationRepository.findById).mockResolvedValue(
+      makeConversationDetail(),
+    );
     vi.mocked(messageHistoryRepository.create).mockResolvedValue();
 
     const result = await useCase.execute({
@@ -52,7 +59,8 @@ describe('SendMessageUseCase', () => {
     expect(result.leadPhoneNumber).toBe('+5511999999999');
     expect(messageHistoryRepository.create).toHaveBeenCalledOnce();
 
-    const savedMessage = vi.mocked(messageHistoryRepository.create).mock.calls[0][0];
+    const savedMessage = vi.mocked(messageHistoryRepository.create).mock
+      .calls[0][0];
     expect(savedMessage.sender).toBe(MessageSender.BOT);
     expect(savedMessage.content).toBe('Olá! Posso ajudar?');
   });
@@ -61,7 +69,11 @@ describe('SendMessageUseCase', () => {
     vi.mocked(conversationRepository.findById).mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ conversationId: 'conv-x', userId: 'user-1', content: 'Oi' }),
+      useCase.execute({
+        conversationId: 'conv-x',
+        userId: 'user-1',
+        content: 'Oi',
+      }),
     ).rejects.toThrow('Conversa não encontrada.');
   });
 
@@ -71,7 +83,11 @@ describe('SendMessageUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ conversationId: 'conv-1', userId: 'user-1', content: 'Oi' }),
+      useCase.execute({
+        conversationId: 'conv-1',
+        userId: 'user-1',
+        content: 'Oi',
+      }),
     ).rejects.toThrow('Acesso negado.');
   });
 
@@ -81,8 +97,14 @@ describe('SendMessageUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ conversationId: 'conv-1', userId: 'user-1', content: 'Oi' }),
-    ).rejects.toThrow('Só é possível enviar mensagens para leads que finalizaram o fluxo.');
+      useCase.execute({
+        conversationId: 'conv-1',
+        userId: 'user-1',
+        content: 'Oi',
+      }),
+    ).rejects.toThrow(
+      'Só é possível enviar mensagens para leads que finalizaram o fluxo.',
+    );
 
     expect(messageHistoryRepository.create).not.toHaveBeenCalled();
   });

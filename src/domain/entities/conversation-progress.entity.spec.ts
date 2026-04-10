@@ -59,7 +59,9 @@ describe('ConversationProgressEntity', () => {
       const progress = makeProgress();
       const before = progress.updatedAt;
       progress.waitForResponse();
-      expect(progress.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(progress.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
     });
   });
 });

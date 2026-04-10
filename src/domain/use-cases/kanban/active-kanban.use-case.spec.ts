@@ -22,7 +22,10 @@ const makeUser = (id = UUID.generate()) => {
   return user;
 };
 
-const makeKanban = (userId: UUID, phoneNumber: string | null = '5511999999999') =>
+const makeKanban = (
+  userId: UUID,
+  phoneNumber: string | null = '5511999999999',
+) =>
   new KanbanEntity({
     userId: userId.toString(),
     title: 'Kanban',
@@ -36,7 +39,10 @@ describe('ActiveKanbanUseCase', () => {
   let useCase: ActiveKanbanUseCase;
 
   beforeEach(() => {
-    kanbanRepository = { get: vi.fn(), update: vi.fn() } as unknown as IKanbanRepository;
+    kanbanRepository = {
+      get: vi.fn(),
+      update: vi.fn(),
+    } as unknown as IKanbanRepository;
     userRepository = { get: vi.fn() } as unknown as IUserRepository;
     useCase = new ActiveKanbanUseCase(kanbanRepository, userRepository);
   });
@@ -54,9 +60,9 @@ describe('ActiveKanbanUseCase', () => {
     vi.mocked(userRepository.get).mockResolvedValue(makeUser(userId));
     vi.mocked(kanbanRepository.get).mockResolvedValue(null);
 
-    await expect(useCase.execute({ id: 'k1', userId: userId.toString() })).rejects.toThrow(
-      'Kanban not found',
-    );
+    await expect(
+      useCase.execute({ id: 'k1', userId: userId.toString() }),
+    ).rejects.toThrow('Kanban not found');
   });
 
   it('should throw if user does not own the kanban', async () => {

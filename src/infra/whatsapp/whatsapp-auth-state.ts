@@ -1,4 +1,7 @@
-import type { AuthenticationState, SignalDataTypeMap } from '@whiskeysockets/baileys';
+import type {
+  AuthenticationState,
+  SignalDataTypeMap,
+} from '@whiskeysockets/baileys';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
 import { WhatsAppSessionEntity } from 'src/domain/entities/whatsapp-session.entity';
 import { loadBaileys } from './baileys.loader';
@@ -33,7 +36,10 @@ export async function useWhatsAppAuthState(
     state: {
       creds,
       keys: {
-        get: async <T extends keyof SignalDataTypeMap>(type: T, ids: string[]) => {
+        get: async <T extends keyof SignalDataTypeMap>(
+          type: T,
+          ids: string[],
+        ) => {
           const result: { [id: string]: SignalDataTypeMap[T] } = {};
           for (const id of ids) {
             let value = keys[`${type}-${id}`];
@@ -44,7 +50,13 @@ export async function useWhatsAppAuthState(
           }
           return result;
         },
-        set: async (data: Partial<{ [T in keyof SignalDataTypeMap]: { [id: string]: SignalDataTypeMap[T] } }>) => {
+        set: async (
+          data: Partial<{
+            [T in keyof SignalDataTypeMap]: {
+              [id: string]: SignalDataTypeMap[T];
+            };
+          }>,
+        ) => {
           for (const category in data) {
             const entries = (data as any)[category] as Record<string, any>;
             for (const id in entries) {

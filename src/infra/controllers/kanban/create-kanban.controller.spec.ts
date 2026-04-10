@@ -16,7 +16,9 @@ describe('CreateKanbanController', () => {
   let controller: CreateKanbanController;
 
   beforeEach(() => {
-    createKanbanUseCase = { execute: vi.fn() } as unknown as CreateKanbanUseCase;
+    createKanbanUseCase = {
+      execute: vi.fn(),
+    } as unknown as CreateKanbanUseCase;
     controller = new CreateKanbanController(createKanbanUseCase);
   });
 
@@ -44,7 +46,9 @@ describe('CreateKanbanController', () => {
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(createKanbanUseCase.execute).mockRejectedValue(new Error('User not found'));
+    vi.mocked(createKanbanUseCase.execute).mockRejectedValue(
+      new Error('User not found'),
+    );
 
     const req = { user: { id: 'user-1' } } as any;
     await expect(

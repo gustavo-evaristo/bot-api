@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
 import { MessageHistoryEntity } from 'src/domain/entities/message-history.entity';
@@ -31,7 +35,10 @@ export class GetConversationUseCase {
     private readonly messageHistoryRepository: IMessageHistoryRepository,
   ) {}
 
-  async execute({ conversationId, userId }: Input): Promise<GetConversationOutput> {
+  async execute({
+    conversationId,
+    userId,
+  }: Input): Promise<GetConversationOutput> {
     const conversation =
       await this.conversationRepository.findById(conversationId);
 

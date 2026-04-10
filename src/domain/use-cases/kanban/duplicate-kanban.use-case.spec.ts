@@ -36,7 +36,10 @@ describe('DuplicateKanbanUseCase', () => {
   let useCase: DuplicateKanbanUseCase;
 
   beforeEach(() => {
-    kanbanRepository = { get: vi.fn(), create: vi.fn() } as unknown as IKanbanRepository;
+    kanbanRepository = {
+      get: vi.fn(),
+      create: vi.fn(),
+    } as unknown as IKanbanRepository;
     userRepository = { get: vi.fn() } as unknown as IUserRepository;
     useCase = new DuplicateKanbanUseCase(kanbanRepository, userRepository);
   });

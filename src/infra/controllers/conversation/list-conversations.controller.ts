@@ -16,7 +16,9 @@ export class ListConversationsController {
     private readonly listConversationsUseCase: ListConversationsUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'List all conversations for the authenticated user' })
+  @ApiOperation({
+    summary: 'List all conversations for the authenticated user',
+  })
   @ApiOkResponse({ type: ListConversationsResponse })
   @ApiBearerAuth()
   @UseGuards(JwtGuard)

@@ -41,7 +41,9 @@ describe('ConversationEntity', () => {
       const conversation = makeConversation();
       const before = conversation.updatedAt;
       conversation.finish();
-      expect(conversation.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(conversation.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
     });
   });
 

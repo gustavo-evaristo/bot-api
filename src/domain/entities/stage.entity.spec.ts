@@ -28,7 +28,9 @@ describe('StageEntity', () => {
       const before = stage.updatedAt;
       stage.delete();
       expect(stage.isDeleted).toBe(true);
-      expect(stage.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(stage.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
     });
   });
 

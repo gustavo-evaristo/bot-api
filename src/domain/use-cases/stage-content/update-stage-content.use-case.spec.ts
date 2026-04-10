@@ -5,7 +5,10 @@ import {
   IStageContentRepository,
   IUserRepository,
 } from 'src/domain/repositories';
-import { StageContentEntity, ContentType } from 'src/domain/entities/stage-content.entity';
+import {
+  StageContentEntity,
+  ContentType,
+} from 'src/domain/entities/stage-content.entity';
 import { UserEntity } from 'src/domain/entities/user.entity';
 import { Password } from 'src/domain/entities/vos';
 
@@ -33,20 +36,44 @@ describe('UpdateStageContentUseCase', () => {
 
   beforeEach(() => {
     userRepository = { get: vi.fn() } as unknown as IUserRepository;
-    stageContentRepository = { get: vi.fn(), save: vi.fn() } as unknown as IStageContentRepository;
-    answerRepository = { deleteByStageContentId: vi.fn(), createMany: vi.fn() } as unknown as IAnswerRepository;
-    useCase = new UpdateStageContentUseCase(stageContentRepository, userRepository, answerRepository);
+    stageContentRepository = {
+      get: vi.fn(),
+      save: vi.fn(),
+    } as unknown as IStageContentRepository;
+    answerRepository = {
+      deleteByStageContentId: vi.fn(),
+      createMany: vi.fn(),
+    } as unknown as IAnswerRepository;
+    useCase = new UpdateStageContentUseCase(
+      stageContentRepository,
+      userRepository,
+      answerRepository,
+    );
   });
 
   it('should throw if user not found', async () => {
     vi.mocked(userRepository.get).mockResolvedValue(null);
-    await expect(useCase.execute({ userId: 'u-1', stageContentId: 'sc-1', content: 'C', contentType: ContentType.TEXT })).rejects.toThrow('User not found');
+    await expect(
+      useCase.execute({
+        userId: 'u-1',
+        stageContentId: 'sc-1',
+        content: 'C',
+        contentType: ContentType.TEXT,
+      }),
+    ).rejects.toThrow('User not found');
   });
 
   it('should throw if stage content not found', async () => {
     vi.mocked(userRepository.get).mockResolvedValue(makeUser());
     vi.mocked(stageContentRepository.get).mockResolvedValue(null);
-    await expect(useCase.execute({ userId: 'u-1', stageContentId: 'sc-1', content: 'C', contentType: ContentType.TEXT })).rejects.toThrow('Stage content not found');
+    await expect(
+      useCase.execute({
+        userId: 'u-1',
+        stageContentId: 'sc-1',
+        content: 'C',
+        contentType: ContentType.TEXT,
+      }),
+    ).rejects.toThrow('Stage content not found');
   });
 
   it('should update text content', async () => {
@@ -56,7 +83,12 @@ describe('UpdateStageContentUseCase', () => {
     vi.mocked(stageContentRepository.get).mockResolvedValue(content);
     vi.mocked(stageContentRepository.save).mockResolvedValue();
 
-    await useCase.execute({ userId: user.id.toString(), stageContentId: content.id.toString(), content: 'New content', contentType: ContentType.TEXT });
+    await useCase.execute({
+      userId: user.id.toString(),
+      stageContentId: content.id.toString(),
+      content: 'New content',
+      contentType: ContentType.TEXT,
+    });
 
     expect(content.content).toBe('New content');
     expect(stageContentRepository.save).toHaveBeenCalledOnce();
@@ -80,7 +112,9 @@ describe('UpdateStageContentUseCase', () => {
       answers: [{ content: 'Sim', score: 1 }],
     });
 
-    expect(answerRepository.deleteByStageContentId).toHaveBeenCalledWith(content.id.toString());
+    expect(answerRepository.deleteByStageContentId).toHaveBeenCalledWith(
+      content.id.toString(),
+    );
     expect(answerRepository.createMany).toHaveBeenCalledOnce();
   });
 });

@@ -7,6 +7,13 @@ import { ConversationModule } from './controllers/conversation/conversation.modu
 import { AnalyticsModule } from './controllers/analytics/analytics.module';
 
 @Module({
-  imports: [WhatsappModule, UserModule, KanbanModule, StageModule, ConversationModule, AnalyticsModule],
+  imports: [
+    WhatsappModule,
+    UserModule,
+    KanbanModule,
+    StageModule,
+    ConversationModule,
+    AnalyticsModule,
+  ],
 })
 export class InfraModule {}

@@ -9,7 +9,9 @@ export class WhatsAppSessionRepository implements IWhatsAppSessionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByUserId(userId: string): Promise<WhatsAppSessionEntity | null> {
-    const record = await this.prisma.whatsapp_sessions.findUnique({ where: { userId } });
+    const record = await this.prisma.whatsapp_sessions.findUnique({
+      where: { userId },
+    });
     if (!record) return null;
 
     return new WhatsAppSessionEntity({

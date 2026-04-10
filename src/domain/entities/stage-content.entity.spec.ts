@@ -17,8 +17,12 @@ describe('StageContentEntity', () => {
     });
 
     it('should return false for other types', () => {
-      expect(makeContent(ContentType.TEXT).isMultipleChoicesContent()).toBe(false);
-      expect(makeContent(ContentType.FREE_INPUT).isMultipleChoicesContent()).toBe(false);
+      expect(makeContent(ContentType.TEXT).isMultipleChoicesContent()).toBe(
+        false,
+      );
+      expect(
+        makeContent(ContentType.FREE_INPUT).isMultipleChoicesContent(),
+      ).toBe(false);
     });
   });
 
@@ -30,7 +34,9 @@ describe('StageContentEntity', () => {
 
     it('should return false for other types', () => {
       expect(makeContent(ContentType.TEXT).isFreeInputContent()).toBe(false);
-      expect(makeContent(ContentType.MULTIPLE_CHOICE).isFreeInputContent()).toBe(false);
+      expect(
+        makeContent(ContentType.MULTIPLE_CHOICE).isFreeInputContent(),
+      ).toBe(false);
     });
   });
 
@@ -45,7 +51,10 @@ describe('StageContentEntity', () => {
   describe('update()', () => {
     it('should update content and contentType', () => {
       const content = makeContent();
-      content.update({ content: 'New content', contentType: ContentType.FREE_INPUT });
+      content.update({
+        content: 'New content',
+        contentType: ContentType.FREE_INPUT,
+      });
       expect(content.content).toBe('New content');
       expect(content.contentType).toBe(ContentType.FREE_INPUT);
     });

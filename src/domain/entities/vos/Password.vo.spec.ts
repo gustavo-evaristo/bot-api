@@ -34,7 +34,10 @@ describe('Password', () => {
 
   describe('createWithConfirmation()', () => {
     it('should create password when both passwords match', () => {
-      const password = Password.createWithConfirmation(VALID_PASSWORD, VALID_PASSWORD);
+      const password = Password.createWithConfirmation(
+        VALID_PASSWORD,
+        VALID_PASSWORD,
+      );
       expect(password.value).toBe(VALID_PASSWORD);
     });
 
@@ -56,7 +59,10 @@ describe('Password', () => {
     it('should call bcrypt.hashSync and return the result', () => {
       const password = Password.create(VALID_PASSWORD);
       const hashed = password.hash();
-      expect(vi.mocked(bcrypt.hashSync)).toHaveBeenCalledWith(VALID_PASSWORD, 10);
+      expect(vi.mocked(bcrypt.hashSync)).toHaveBeenCalledWith(
+        VALID_PASSWORD,
+        10,
+      );
       expect(hashed).toBe('hashed_password');
     });
   });

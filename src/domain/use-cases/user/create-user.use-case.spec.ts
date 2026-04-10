@@ -16,7 +16,9 @@ const makeRepos = () => {
     create: vi.fn(),
   } as unknown as IUserRepository;
 
-  const jwtService = { sign: vi.fn().mockReturnValue('jwt-token') } as unknown as JwtService;
+  const jwtService = {
+    sign: vi.fn().mockReturnValue('jwt-token'),
+  } as unknown as JwtService;
 
   return { userRepository, jwtService };
 };
@@ -42,7 +44,9 @@ describe('CreateUserUseCase', () => {
   it('should throw if user already exists', async () => {
     vi.mocked(userRepository.findByEmailOrPhone).mockResolvedValue({} as any);
 
-    await expect(useCase.execute(validInput)).rejects.toThrow('User already exists');
+    await expect(useCase.execute(validInput)).rejects.toThrow(
+      'User already exists',
+    );
   });
 
   it('should create user and return user + token', async () => {

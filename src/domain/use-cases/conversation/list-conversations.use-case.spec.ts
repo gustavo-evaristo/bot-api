@@ -7,7 +7,9 @@ describe('ListConversationsUseCase', () => {
   let useCase: ListConversationsUseCase;
 
   beforeEach(() => {
-    conversationRepository = { findManyByUserId: vi.fn() } as unknown as IConversationRepository;
+    conversationRepository = {
+      findManyByUserId: vi.fn(),
+    } as unknown as IConversationRepository;
     useCase = new ListConversationsUseCase(conversationRepository);
   });
 
@@ -25,7 +27,9 @@ describe('ListConversationsUseCase', () => {
         updatedAt: new Date(),
       },
     ];
-    vi.mocked(conversationRepository.findManyByUserId).mockResolvedValue(conversations);
+    vi.mocked(conversationRepository.findManyByUserId).mockResolvedValue(
+      conversations,
+    );
 
     const result = await useCase.execute({ userId: 'u-1' });
 

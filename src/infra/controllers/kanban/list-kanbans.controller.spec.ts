@@ -5,7 +5,11 @@ import { KanbanEntity } from 'src/domain/entities/kanban.entity';
 import { UUID } from 'src/domain/entities/vos';
 
 const makeKanban = () =>
-  new KanbanEntity({ userId: UUID.generate().toString(), title: 'K', description: 'D' });
+  new KanbanEntity({
+    userId: UUID.generate().toString(),
+    title: 'K',
+    description: 'D',
+  });
 
 describe('ListKanbansController', () => {
   let listKanbansUseCase: ListKanbansUseCase;

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
-import { MessageHistoryEntity, MessageSender } from 'src/domain/entities/message-history.entity';
+import {
+  MessageHistoryEntity,
+  MessageSender,
+} from 'src/domain/entities/message-history.entity';
 import { ConversationStatus } from 'src/domain/entities/conversation.entity';
 import { UUID } from 'src/domain/entities/vos';
 
@@ -23,7 +26,8 @@ export class SendMessageUseCase {
   ) {}
 
   async execute({ conversationId, userId, content }: Input): Promise<Output> {
-    const conversation = await this.conversationRepository.findById(conversationId);
+    const conversation =
+      await this.conversationRepository.findById(conversationId);
 
     if (!conversation) {
       throw new Error('Conversa não encontrada.');
@@ -34,7 +38,9 @@ export class SendMessageUseCase {
     }
 
     if (conversation.status !== ConversationStatus.FINISHED) {
-      throw new Error('Só é possível enviar mensagens para leads que finalizaram o fluxo.');
+      throw new Error(
+        'Só é possível enviar mensagens para leads que finalizaram o fluxo.',
+      );
     }
 
     await this.messageHistoryRepository.create(

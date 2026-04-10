@@ -18,7 +18,9 @@ describe('GetConversationController', () => {
   let controller: GetConversationController;
 
   beforeEach(() => {
-    getConversationUseCase = { execute: vi.fn() } as unknown as GetConversationUseCase;
+    getConversationUseCase = {
+      execute: vi.fn(),
+    } as unknown as GetConversationUseCase;
     controller = new GetConversationController(getConversationUseCase);
   });
 
@@ -29,17 +31,28 @@ describe('GetConversationController', () => {
     const req = { user: { id: 'u-1' } } as any;
     const result = await controller.getConversation('conv-1', req);
 
-    expect(getConversationUseCase.execute).toHaveBeenCalledWith({ conversationId: 'conv-1', userId: 'u-1' });
+    expect(getConversationUseCase.execute).toHaveBeenCalledWith({
+      conversationId: 'conv-1',
+      userId: 'u-1',
+    });
     expect(result).toEqual(output);
   });
 
   it('should propagate NotFoundException', async () => {
-    vi.mocked(getConversationUseCase.execute).mockRejectedValue(new NotFoundException());
-    await expect(controller.getConversation('conv-1', { user: { id: 'u-1' } } as any)).rejects.toThrow(NotFoundException);
+    vi.mocked(getConversationUseCase.execute).mockRejectedValue(
+      new NotFoundException(),
+    );
+    await expect(
+      controller.getConversation('conv-1', { user: { id: 'u-1' } } as any),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('should propagate ForbiddenException', async () => {
-    vi.mocked(getConversationUseCase.execute).mockRejectedValue(new ForbiddenException());
-    await expect(controller.getConversation('conv-1', { user: { id: 'u-1' } } as any)).rejects.toThrow(ForbiddenException);
+    vi.mocked(getConversationUseCase.execute).mockRejectedValue(
+      new ForbiddenException(),
+    );
+    await expect(
+      controller.getConversation('conv-1', { user: { id: 'u-1' } } as any),
+    ).rejects.toThrow(ForbiddenException);
   });
 });

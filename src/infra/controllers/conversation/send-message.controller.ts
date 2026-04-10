@@ -22,7 +22,10 @@ export class SendMessageController {
   @Post(':conversationId/messages')
   @UseGuards(JwtGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Send a message to a lead (only allowed for FINISHED conversations)' })
+  @ApiOperation({
+    summary:
+      'Send a message to a lead (only allowed for FINISHED conversations)',
+  })
   @ApiParam({ name: 'conversationId', type: String })
   @ApiBody({ type: SendMessageDTO })
   async sendMessage(
@@ -36,7 +39,12 @@ export class SendMessageController {
       content,
     });
 
-    await this.whatsappService.sendMessage(user.id, leadPhoneNumber, content, conversationId);
+    await this.whatsappService.sendMessage(
+      user.id,
+      leadPhoneNumber,
+      content,
+      conversationId,
+    );
 
     return { sent: true };
   }

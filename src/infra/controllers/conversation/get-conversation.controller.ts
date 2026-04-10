@@ -17,7 +17,9 @@ export class GetConversationController {
     private readonly getConversationUseCase: GetConversationUseCase,
   ) {}
 
-  @ApiOperation({ summary: 'Get conversation detail with full message history' })
+  @ApiOperation({
+    summary: 'Get conversation detail with full message history',
+  })
   @ApiOkResponse({ type: GetConversationResponse })
   @ApiParam({ name: 'id', description: 'Conversation ID' })
   @ApiBearerAuth()

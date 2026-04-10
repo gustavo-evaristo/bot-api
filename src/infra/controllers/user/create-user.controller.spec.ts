@@ -28,7 +28,10 @@ describe('CreateUserController', () => {
 
   it('should return formatted user with token', async () => {
     const user = makeUser();
-    vi.mocked(createUserUseCase.execute).mockResolvedValue({ user, token: 'jwt-token' });
+    vi.mocked(createUserUseCase.execute).mockResolvedValue({
+      user,
+      token: 'jwt-token',
+    });
 
     const result = await controller.execute({
       name: 'Ana',
@@ -49,9 +52,17 @@ describe('CreateUserController', () => {
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(createUserUseCase.execute).mockRejectedValue(new Error('Email already in use'));
+    vi.mocked(createUserUseCase.execute).mockRejectedValue(
+      new Error('Email already in use'),
+    );
     await expect(
-      controller.execute({ name: 'A', email: 'a@a.com', phone: '111', password: 'p', confirmPassword: 'p' }),
+      controller.execute({
+        name: 'A',
+        email: 'a@a.com',
+        phone: '111',
+        password: 'p',
+        confirmPassword: 'p',
+      }),
     ).rejects.toThrow('Email already in use');
   });
 });

@@ -11,7 +11,12 @@ vi.mock('bcrypt', () => ({
 }));
 
 const makeUser = () =>
-  new UserEntity({ name: 'Ana', email: 'ana@test.com', phone: '5511999999999', password: Password.fromHash('hashed') });
+  new UserEntity({
+    name: 'Ana',
+    email: 'ana@test.com',
+    phone: '5511999999999',
+    password: Password.fromHash('hashed'),
+  });
 
 const makeDetails = (userId: string): KanbanDetails => ({
   id: UUID.generate().toString(),
@@ -37,14 +42,18 @@ describe('GetKanbanUseCase', () => {
 
   it('should throw if user not found', async () => {
     vi.mocked(userRepository.get).mockResolvedValue(null);
-    await expect(useCase.execute({ id: 'k-1', userId: 'u-1' })).rejects.toThrow('User not found');
+    await expect(useCase.execute({ id: 'k-1', userId: 'u-1' })).rejects.toThrow(
+      'User not found',
+    );
   });
 
   it('should throw if kanban not found', async () => {
     const user = makeUser();
     vi.mocked(userRepository.get).mockResolvedValue(user);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(null);
-    await expect(useCase.execute({ id: 'k-1', userId: user.id.toString() })).rejects.toThrow('Kanban not found');
+    await expect(
+      useCase.execute({ id: 'k-1', userId: user.id.toString() }),
+    ).rejects.toThrow('Kanban not found');
   });
 
   it('should throw if user does not own the kanban', async () => {
@@ -52,7 +61,9 @@ describe('GetKanbanUseCase', () => {
     const details = makeDetails('other-user-id');
     vi.mocked(userRepository.get).mockResolvedValue(user);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
-    await expect(useCase.execute({ id: details.id, userId: user.id.toString() })).rejects.toThrow('User does not own this kanban');
+    await expect(
+      useCase.execute({ id: details.id, userId: user.id.toString() }),
+    ).rejects.toThrow('User does not own this kanban');
   });
 
   it('should return kanban details when user owns it', async () => {
@@ -61,7 +72,10 @@ describe('GetKanbanUseCase', () => {
     vi.mocked(userRepository.get).mockResolvedValue(user);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
 
-    const result = await useCase.execute({ id: details.id, userId: user.id.toString() });
+    const result = await useCase.execute({
+      id: details.id,
+      userId: user.id.toString(),
+    });
     expect(result).toEqual(details);
   });
 });

@@ -29,7 +29,9 @@ describe('LoginUseCase', () => {
       findByEmail: vi.fn(),
     } as unknown as IUserRepository;
 
-    jwtService = { sign: vi.fn().mockReturnValue('jwt-token') } as unknown as JwtService;
+    jwtService = {
+      sign: vi.fn().mockReturnValue('jwt-token'),
+    } as unknown as JwtService;
     useCase = new LoginUseCase(userRepository, jwtService);
   });
 

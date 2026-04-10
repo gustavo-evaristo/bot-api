@@ -5,14 +5,21 @@ import { KanbanEntity } from 'src/domain/entities/kanban.entity';
 import { UUID } from 'src/domain/entities/vos';
 
 const makeKanban = () =>
-  new KanbanEntity({ userId: UUID.generate().toString(), title: 'K', description: 'D', imageUrl: 'img.png' });
+  new KanbanEntity({
+    userId: UUID.generate().toString(),
+    title: 'K',
+    description: 'D',
+    imageUrl: 'img.png',
+  });
 
 describe('DuplicateKanbanController', () => {
   let duplicateKanbanUseCase: DuplicateKanbanUseCase;
   let controller: DuplicateKanbanController;
 
   beforeEach(() => {
-    duplicateKanbanUseCase = { execute: vi.fn() } as unknown as DuplicateKanbanUseCase;
+    duplicateKanbanUseCase = {
+      execute: vi.fn(),
+    } as unknown as DuplicateKanbanUseCase;
     controller = new DuplicateKanbanController(duplicateKanbanUseCase);
   });
 
@@ -23,7 +30,10 @@ describe('DuplicateKanbanController', () => {
     const req = { user: { id: 'u-1' } } as any;
     const result = await controller.handle({ kanbanId: 'k-1' }, req);
 
-    expect(duplicateKanbanUseCase.execute).toHaveBeenCalledWith({ kanbanId: 'k-1', userId: 'u-1' });
+    expect(duplicateKanbanUseCase.execute).toHaveBeenCalledWith({
+      kanbanId: 'k-1',
+      userId: 'u-1',
+    });
     expect(result).toEqual({
       id: kanban.id.toString(),
       title: kanban.title,
@@ -33,7 +43,11 @@ describe('DuplicateKanbanController', () => {
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(duplicateKanbanUseCase.execute).mockRejectedValue(new Error('Kanban not found'));
-    await expect(controller.handle({ kanbanId: 'k-1' }, { user: { id: 'u-1' } } as any)).rejects.toThrow('Kanban not found');
+    vi.mocked(duplicateKanbanUseCase.execute).mockRejectedValue(
+      new Error('Kanban not found'),
+    );
+    await expect(
+      controller.handle({ kanbanId: 'k-1' }, { user: { id: 'u-1' } } as any),
+    ).rejects.toThrow('Kanban not found');
   });
 });

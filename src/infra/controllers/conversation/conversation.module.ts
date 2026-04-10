@@ -13,7 +13,17 @@ import { SendMessageController } from './send-message.controller';
 
 @Module({
   imports: [DatabaseModule, AuthenticationModule, WhatsappModule],
-  providers: [ListConversationsUseCase, GetConversationUseCase, ListLeadsUseCase, SendMessageUseCase],
-  controllers: [ListConversationsController, GetConversationController, ListLeadsController, SendMessageController],
+  providers: [
+    ListConversationsUseCase,
+    GetConversationUseCase,
+    ListLeadsUseCase,
+    SendMessageUseCase,
+  ],
+  controllers: [
+    ListConversationsController,
+    GetConversationController,
+    ListLeadsController,
+    SendMessageController,
+  ],
 })
 export class ConversationModule {}

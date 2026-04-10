@@ -10,7 +10,12 @@ import { FollowUpService } from './follow-up.service';
 
 @Module({
   imports: [ScheduleModule.forRoot(), DatabaseModule, AuthenticationModule],
-  providers: [WhatsappService, WhatsappGateway, ProcessMessageUseCase, FollowUpService],
+  providers: [
+    WhatsappService,
+    WhatsappGateway,
+    ProcessMessageUseCase,
+    FollowUpService,
+  ],
   controllers: [WhatsappController],
   exports: [WhatsappService],
 })

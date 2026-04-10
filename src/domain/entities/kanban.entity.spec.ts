@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { KanbanEntity } from './kanban.entity';
 import { UUID } from './vos';
 
-const makeKanban = (overrides: Partial<ConstructorParameters<typeof KanbanEntity>[0]> = {}) =>
+const makeKanban = (
+  overrides: Partial<ConstructorParameters<typeof KanbanEntity>[0]> = {},
+) =>
   new KanbanEntity({
     userId: UUID.generate().toString(),
     title: 'Test Kanban',
@@ -46,7 +48,10 @@ describe('KanbanEntity', () => {
 
   describe('inactive()', () => {
     it('should deactivate the kanban', () => {
-      const kanban = makeKanban({ phoneNumber: '5511999999999', isActive: true });
+      const kanban = makeKanban({
+        phoneNumber: '5511999999999',
+        isActive: true,
+      });
       kanban.inactive();
       expect(kanban.isActive).toBe(false);
     });
@@ -68,7 +73,11 @@ describe('KanbanEntity', () => {
   describe('update()', () => {
     it('should update title, description and imageUrl', () => {
       const kanban = makeKanban();
-      kanban.update({ title: 'New Title', description: 'New Desc', imageUrl: 'img.png' });
+      kanban.update({
+        title: 'New Title',
+        description: 'New Desc',
+        imageUrl: 'img.png',
+      });
       expect(kanban.title).toBe('New Title');
       expect(kanban.description).toBe('New Desc');
       expect(kanban.imageUrl).toBe('img.png');
@@ -85,7 +94,10 @@ describe('KanbanEntity', () => {
 
   describe('delete()', () => {
     it('should set isDeleted=true and isActive=false', () => {
-      const kanban = makeKanban({ phoneNumber: '5511999999999', isActive: true });
+      const kanban = makeKanban({
+        phoneNumber: '5511999999999',
+        isActive: true,
+      });
       kanban.delete();
       expect(kanban.isDeleted).toBe(true);
       expect(kanban.isActive).toBe(false);
@@ -94,7 +106,10 @@ describe('KanbanEntity', () => {
 
   describe('duplicate()', () => {
     it('should return a new kanban with same data but no phoneNumber and inactive', () => {
-      const kanban = makeKanban({ phoneNumber: '5511999999999', isActive: true });
+      const kanban = makeKanban({
+        phoneNumber: '5511999999999',
+        isActive: true,
+      });
       const copy = kanban.duplicate();
 
       expect(copy.title).toBe(kanban.title);

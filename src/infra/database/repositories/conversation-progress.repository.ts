@@ -9,9 +9,7 @@ import { UUID } from 'src/domain/entities/vos';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
-export class ConversationProgressRepository
-  implements IConversationProgressRepository
-{
+export class ConversationProgressRepository implements IConversationProgressRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(progress: ConversationProgressEntity): Promise<void> {
@@ -33,10 +31,9 @@ export class ConversationProgressRepository
   async findByConversationId(
     conversationId: string,
   ): Promise<ConversationProgressEntity | null> {
-    const progress =
-      await this.prismaService.conversation_progress.findUnique({
-        where: { conversationId },
-      });
+    const progress = await this.prismaService.conversation_progress.findUnique({
+      where: { conversationId },
+    });
 
     if (!progress) return null;
 
@@ -61,7 +58,9 @@ export class ConversationProgressRepository
     });
   }
 
-  async findPendingFollowUps(thresholdMinutes: number): Promise<PendingFollowUp[]> {
+  async findPendingFollowUps(
+    thresholdMinutes: number,
+  ): Promise<PendingFollowUp[]> {
     const threshold = subMinutes(new Date(), thresholdMinutes);
 
     const records = await this.prismaService.conversation_progress.findMany({

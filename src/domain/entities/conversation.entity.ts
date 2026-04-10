@@ -41,7 +41,8 @@ export class ConversationEntity {
 
     this.leadPhoneNumber = props.leadPhoneNumber;
     this.leadName = props.leadName ?? null;
-    this.status = (props.status as ConversationStatus) ?? ConversationStatus.ACTIVE;
+    this.status =
+      (props.status as ConversationStatus) ?? ConversationStatus.ACTIVE;
 
     const createdAt = props.createdAt || new Date();
     this.createdAt = createdAt;

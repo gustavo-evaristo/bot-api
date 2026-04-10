@@ -45,7 +45,9 @@ describe('GetProfileController', () => {
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(getProfileUseCase.execute).mockRejectedValue(new Error('User not found'));
+    vi.mocked(getProfileUseCase.execute).mockRejectedValue(
+      new Error('User not found'),
+    );
     const req = { user: { id: 'u-1' } } as any;
     await expect(controller.getProfile(req)).rejects.toThrow('User not found');
   });

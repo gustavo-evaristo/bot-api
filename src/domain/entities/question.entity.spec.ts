@@ -109,7 +109,9 @@ describe('AnswerEntity', () => {
         score: 0,
       });
       expect(entity.createdAt).toBeInstanceOf(Date);
-      expect(entity.createdAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(entity.createdAt.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
     });
 
     it('should use provided createdAt', () => {

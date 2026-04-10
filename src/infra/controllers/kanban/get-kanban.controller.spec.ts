@@ -31,12 +31,19 @@ describe('GetKanbanController', () => {
     const req = { user: { id: 'u-1' } } as any;
     const result = await controller.getKanban({ id: details.id }, req);
 
-    expect(getKanbanUseCase.execute).toHaveBeenCalledWith({ id: details.id, userId: 'u-1' });
+    expect(getKanbanUseCase.execute).toHaveBeenCalledWith({
+      id: details.id,
+      userId: 'u-1',
+    });
     expect(result).toEqual(details);
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(getKanbanUseCase.execute).mockRejectedValue(new Error('Kanban not found'));
-    await expect(controller.getKanban({ id: 'k-1' }, { user: { id: 'u-1' } } as any)).rejects.toThrow('Kanban not found');
+    vi.mocked(getKanbanUseCase.execute).mockRejectedValue(
+      new Error('Kanban not found'),
+    );
+    await expect(
+      controller.getKanban({ id: 'k-1' }, { user: { id: 'u-1' } } as any),
+    ).rejects.toThrow('Kanban not found');
   });
 });

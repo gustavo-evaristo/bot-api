@@ -21,7 +21,9 @@ describe('GetAnalyticsController', () => {
   };
 
   beforeEach(() => {
-    getAnalyticsUseCase = { execute: vi.fn() } as unknown as GetAnalyticsUseCase;
+    getAnalyticsUseCase = {
+      execute: vi.fn(),
+    } as unknown as GetAnalyticsUseCase;
     controller = new GetAnalyticsController(getAnalyticsUseCase);
   });
 
@@ -38,7 +40,9 @@ describe('GetAnalyticsController', () => {
   it('should return correct shape with all 7 days', async () => {
     vi.mocked(getAnalyticsUseCase.execute).mockResolvedValue(mockAnalytics);
 
-    const result = await controller.getAnalytics({ user: { id: 'u-1' } } as any);
+    const result = await controller.getAnalytics({
+      user: { id: 'u-1' },
+    } as any);
 
     expect(result.leadsByDayOfWeek).toHaveLength(7);
     expect(result.totalLeads).toBe(120);
@@ -61,7 +65,9 @@ describe('GetAnalyticsController', () => {
     };
     vi.mocked(getAnalyticsUseCase.execute).mockResolvedValue(emptyResult);
 
-    const result = await controller.getAnalytics({ user: { id: 'u-2' } } as any);
+    const result = await controller.getAnalytics({
+      user: { id: 'u-2' },
+    } as any);
 
     expect(result.totalLeads).toBe(0);
     expect(result.totalInteractions).toBe(0);

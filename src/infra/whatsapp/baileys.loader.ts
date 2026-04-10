@@ -3,7 +3,9 @@ import type * as BaileysType from '@whiskeysockets/baileys';
 // Baileys v7 is ESM-only. In a NestJS CommonJS project, TypeScript compiles
 // dynamic import() to require(), which cannot load ESM modules. Using
 // new Function preserves the native import() call at runtime.
-const nativeImport = new Function('m', 'return import(m)') as (m: string) => Promise<typeof BaileysType>;
+const nativeImport = new Function('m', 'return import(m)') as (
+  m: string,
+) => Promise<typeof BaileysType>;
 
 let cached: typeof BaileysType | null = null;
 

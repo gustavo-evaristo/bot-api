@@ -37,20 +37,31 @@ describe('DeleteStageUseCase', () => {
 
   beforeEach(() => {
     userRepository = { get: vi.fn() } as unknown as IUserRepository;
-    stageRepository = { get: vi.fn(), save: vi.fn() } as unknown as IStageRepository;
+    stageRepository = {
+      get: vi.fn(),
+      save: vi.fn(),
+    } as unknown as IStageRepository;
     kanbanRepository = { get: vi.fn() } as unknown as IKanbanRepository;
-    useCase = new DeleteStageUseCase(userRepository, stageRepository, kanbanRepository);
+    useCase = new DeleteStageUseCase(
+      userRepository,
+      stageRepository,
+      kanbanRepository,
+    );
   });
 
   it('should throw if user not found', async () => {
     vi.mocked(userRepository.get).mockResolvedValue(null);
-    await expect(useCase.execute({ stageId: 's-1', userId: 'u-1' })).rejects.toThrow('User not found');
+    await expect(
+      useCase.execute({ stageId: 's-1', userId: 'u-1' }),
+    ).rejects.toThrow('User not found');
   });
 
   it('should throw if stage not found', async () => {
     vi.mocked(userRepository.get).mockResolvedValue(makeUser());
     vi.mocked(stageRepository.get).mockResolvedValue(null);
-    await expect(useCase.execute({ stageId: 's-1', userId: 'u-1' })).rejects.toThrow('Stage not found');
+    await expect(
+      useCase.execute({ stageId: 's-1', userId: 'u-1' }),
+    ).rejects.toThrow('Stage not found');
   });
 
   it('should throw if kanban not found', async () => {
@@ -59,7 +70,12 @@ describe('DeleteStageUseCase', () => {
     vi.mocked(userRepository.get).mockResolvedValue(user);
     vi.mocked(stageRepository.get).mockResolvedValue(stage);
     vi.mocked(kanbanRepository.get).mockResolvedValue(null);
-    await expect(useCase.execute({ stageId: stage.id.toString(), userId: user.id.toString() })).rejects.toThrow('Kanban not found');
+    await expect(
+      useCase.execute({
+        stageId: stage.id.toString(),
+        userId: user.id.toString(),
+      }),
+    ).rejects.toThrow('Kanban not found');
   });
 
   it('should throw if user does not own the kanban', async () => {
@@ -69,7 +85,12 @@ describe('DeleteStageUseCase', () => {
     vi.mocked(userRepository.get).mockResolvedValue(user);
     vi.mocked(stageRepository.get).mockResolvedValue(stage);
     vi.mocked(kanbanRepository.get).mockResolvedValue(kanban);
-    await expect(useCase.execute({ stageId: stage.id.toString(), userId: user.id.toString() })).rejects.toThrow('User does not own this kanban');
+    await expect(
+      useCase.execute({
+        stageId: stage.id.toString(),
+        userId: user.id.toString(),
+      }),
+    ).rejects.toThrow('User does not own this kanban');
   });
 
   it('should soft-delete the stage', async () => {
@@ -81,7 +102,10 @@ describe('DeleteStageUseCase', () => {
     vi.mocked(kanbanRepository.get).mockResolvedValue(kanban);
     vi.mocked(stageRepository.save).mockResolvedValue();
 
-    await useCase.execute({ stageId: stage.id.toString(), userId: user.id.toString() });
+    await useCase.execute({
+      stageId: stage.id.toString(),
+      userId: user.id.toString(),
+    });
 
     expect(stage.isDeleted).toBe(true);
     expect(stageRepository.save).toHaveBeenCalledOnce();

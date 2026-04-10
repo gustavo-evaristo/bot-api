@@ -15,16 +15,28 @@ describe('CreateStageController', () => {
     vi.mocked(createStageUseCase.execute).mockResolvedValue();
 
     const req = { user: { id: 'u-1' } } as any;
-    const result = await controller.handle({ title: 'Stage 1', description: 'Desc', kanbanId: 'k-1' }, req);
+    const result = await controller.handle(
+      { title: 'Stage 1', description: 'Desc', kanbanId: 'k-1' },
+      req,
+    );
 
-    expect(createStageUseCase.execute).toHaveBeenCalledWith({ kanbanId: 'k-1', title: 'Stage 1', description: 'Desc', userId: 'u-1' });
+    expect(createStageUseCase.execute).toHaveBeenCalledWith({
+      kanbanId: 'k-1',
+      title: 'Stage 1',
+      description: 'Desc',
+      userId: 'u-1',
+    });
     expect(result).toEqual({ status: 'ok' });
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(createStageUseCase.execute).mockRejectedValue(new Error('Kanban not found'));
+    vi.mocked(createStageUseCase.execute).mockRejectedValue(
+      new Error('Kanban not found'),
+    );
     await expect(
-      controller.handle({ title: 'S', description: 'D', kanbanId: 'k-1' }, { user: { id: 'u-1' } } as any),
+      controller.handle({ title: 'S', description: 'D', kanbanId: 'k-1' }, {
+        user: { id: 'u-1' },
+      } as any),
     ).rejects.toThrow('Kanban not found');
   });
 });

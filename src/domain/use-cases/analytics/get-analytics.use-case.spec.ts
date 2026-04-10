@@ -7,7 +7,9 @@ describe('GetAnalyticsUseCase', () => {
   let useCase: GetAnalyticsUseCase;
 
   beforeEach(() => {
-    analyticsRepository = { getAnalytics: vi.fn() } as unknown as IAnalyticsRepository;
+    analyticsRepository = {
+      getAnalytics: vi.fn(),
+    } as unknown as IAnalyticsRepository;
     useCase = new GetAnalyticsUseCase(analyticsRepository);
   });
 
@@ -25,13 +27,16 @@ describe('GetAnalyticsUseCase', () => {
         { day: 'Sunday', count: 0 },
       ],
     };
-    vi.mocked(analyticsRepository.getAnalytics).mockResolvedValue(analyticsResult);
+    vi.mocked(analyticsRepository.getAnalytics).mockResolvedValue(
+      analyticsResult,
+    );
 
     const result = await useCase.execute({ userId: 'u-1' });
 
     expect(analyticsRepository.getAnalytics).toHaveBeenCalledTimes(1);
-    const [calledUserId, calledWeekStart, calledWeekEnd] =
-      vi.mocked(analyticsRepository.getAnalytics).mock.calls[0];
+    const [calledUserId, calledWeekStart, calledWeekEnd] = vi.mocked(
+      analyticsRepository.getAnalytics,
+    ).mock.calls[0];
     expect(calledUserId).toBe('u-1');
     expect(calledWeekStart).toBeInstanceOf(Date);
     expect(calledWeekEnd).toBeInstanceOf(Date);
@@ -48,7 +53,8 @@ describe('GetAnalyticsUseCase', () => {
 
     await useCase.execute({ userId: 'u-1' });
 
-    const [, weekStart] = vi.mocked(analyticsRepository.getAnalytics).mock.calls[0];
+    const [, weekStart] = vi.mocked(analyticsRepository.getAnalytics).mock
+      .calls[0];
     expect(weekStart.getDay()).toBe(1); // 1 = Monday
     expect(weekStart.getHours()).toBe(0);
     expect(weekStart.getMinutes()).toBe(0);
@@ -64,7 +70,8 @@ describe('GetAnalyticsUseCase', () => {
 
     await useCase.execute({ userId: 'u-1' });
 
-    const [, , weekEnd] = vi.mocked(analyticsRepository.getAnalytics).mock.calls[0];
+    const [, , weekEnd] = vi.mocked(analyticsRepository.getAnalytics).mock
+      .calls[0];
     expect(weekEnd.getDay()).toBe(0); // 0 = Sunday
     expect(weekEnd.getHours()).toBe(23);
     expect(weekEnd.getMinutes()).toBe(59);
@@ -80,8 +87,10 @@ describe('GetAnalyticsUseCase', () => {
 
     await useCase.execute({ userId: 'u-1' });
 
-    const [, weekStart, weekEnd] = vi.mocked(analyticsRepository.getAnalytics).mock.calls[0];
-    const diffDays = (weekEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24);
+    const [, weekStart, weekEnd] = vi.mocked(analyticsRepository.getAnalytics)
+      .mock.calls[0];
+    const diffDays =
+      (weekEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24);
     expect(Math.round(diffDays)).toBe(7); // Mon 00:00:00 to Sun 23:59:59 ≈ 7 days
   });
 });

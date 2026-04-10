@@ -28,7 +28,10 @@ describe('LoginController', () => {
 
   it('should call the use case and return formatted response', async () => {
     const user = makeUser();
-    vi.mocked(loginUseCase.execute).mockResolvedValue({ user, token: 'jwt-token' });
+    vi.mocked(loginUseCase.execute).mockResolvedValue({
+      user,
+      token: 'jwt-token',
+    });
 
     const result = await controller.login({
       email: 'lucas@test.com',
@@ -50,7 +53,9 @@ describe('LoginController', () => {
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(loginUseCase.execute).mockRejectedValue(new Error('User not found'));
+    vi.mocked(loginUseCase.execute).mockRejectedValue(
+      new Error('User not found'),
+    );
 
     await expect(
       controller.login({ email: 'x@x.com', password: 'Password@123' }),

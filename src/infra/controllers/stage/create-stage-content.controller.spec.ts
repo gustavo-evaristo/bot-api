@@ -8,7 +8,9 @@ describe('CreateStageContentController', () => {
   let controller: CreateStageContentController;
 
   beforeEach(() => {
-    createStageContentUseCase = { execute: vi.fn() } as unknown as CreateStageContentUseCase;
+    createStageContentUseCase = {
+      execute: vi.fn(),
+    } as unknown as CreateStageContentUseCase;
     controller = new CreateStageContentController(createStageContentUseCase);
   });
 
@@ -16,7 +18,11 @@ describe('CreateStageContentController', () => {
     vi.mocked(createStageContentUseCase.execute).mockResolvedValue();
 
     const req = { user: { id: 'u-1' } } as any;
-    const result = await controller.handle({ content: 'Hello', contentType: ContentType.TEXT }, 's-1', req);
+    const result = await controller.handle(
+      { content: 'Hello', contentType: ContentType.TEXT },
+      's-1',
+      req,
+    );
 
     expect(createStageContentUseCase.execute).toHaveBeenCalledWith({
       userId: 'u-1',
@@ -29,9 +35,15 @@ describe('CreateStageContentController', () => {
   });
 
   it('should propagate errors from the use case', async () => {
-    vi.mocked(createStageContentUseCase.execute).mockRejectedValue(new Error('Stage not found'));
+    vi.mocked(createStageContentUseCase.execute).mockRejectedValue(
+      new Error('Stage not found'),
+    );
     await expect(
-      controller.handle({ content: 'C', contentType: ContentType.TEXT }, 's-1', { user: { id: 'u-1' } } as any),
+      controller.handle(
+        { content: 'C', contentType: ContentType.TEXT },
+        's-1',
+        { user: { id: 'u-1' } } as any,
+      ),
     ).rejects.toThrow('Stage not found');
   });
 });

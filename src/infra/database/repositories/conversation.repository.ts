@@ -114,7 +114,9 @@ export class ConversationRepository implements IConversationRepository {
       kanbanId: r.kanbanId,
       kanbanTitle: r.kanbanTitle,
       lastMessage:
-        r.lastMessageContent !== null && r.lastMessageSender !== null && r.lastMessageSentAt !== null
+        r.lastMessageContent !== null &&
+        r.lastMessageSender !== null &&
+        r.lastMessageSentAt !== null
           ? {
               content: r.lastMessageContent,
               sender: r.lastMessageSender,

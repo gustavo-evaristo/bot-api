@@ -34,11 +34,15 @@ describe('ListLeadsUseCase', () => {
         createdAt: new Date('2026-04-07T08:00:00Z'),
       },
     ];
-    vi.mocked(conversationRepository.findLeadsByUserId).mockResolvedValue(leads);
+    vi.mocked(conversationRepository.findLeadsByUserId).mockResolvedValue(
+      leads,
+    );
 
     const result = await useCase.execute({ userId: 'u-1' });
 
-    expect(conversationRepository.findLeadsByUserId).toHaveBeenCalledWith('u-1');
+    expect(conversationRepository.findLeadsByUserId).toHaveBeenCalledWith(
+      'u-1',
+    );
     expect(result).toEqual({ leads });
   });
 

@@ -51,15 +51,23 @@ export class ProcessMessageUseCase {
     private readonly leadResponseRepository: ILeadResponseRepository,
   ) {}
 
-  async execute({ botPhoneNumber, leadPhoneNumber, messageText, leadName }: Input): Promise<Output> {
-    const kanban = await this.kanbanRepository.findByPhoneNumber(botPhoneNumber);
+  async execute({
+    botPhoneNumber,
+    leadPhoneNumber,
+    messageText,
+    leadName,
+  }: Input): Promise<Output> {
+    const kanban =
+      await this.kanbanRepository.findByPhoneNumber(botPhoneNumber);
 
     if (!kanban) {
       return { conversationId: null, userId: null, messagesToSend: [] };
     }
 
     const userId = kanban.userId.toString();
-    const details = await this.kanbanRepository.getDetails(kanban.id.toString());
+    const details = await this.kanbanRepository.getDetails(
+      kanban.id.toString(),
+    );
 
     if (!details || details.stages.length === 0) {
       return { conversationId: null, userId, messagesToSend: [] };
@@ -77,7 +85,10 @@ export class ProcessMessageUseCase {
         leadPhoneNumber,
       );
 
-      if (lastFinished && isAfter(lastFinished.updatedAt, subHours(new Date(), 24))) {
+      if (
+        lastFinished &&
+        isAfter(lastFinished.updatedAt, subHours(new Date(), 24))
+      ) {
         return {
           conversationId: lastFinished.id.toString(),
           userId,
@@ -108,34 +119,55 @@ export class ProcessMessageUseCase {
       await this.conversationRepository.create(conversation);
       await this.conversationProgressRepository.create(progress);
 
-      return this.executeFromCurrentPosition(progress, details, conversation, userId);
+      return this.executeFromCurrentPosition(
+        progress,
+        details,
+        conversation,
+        userId,
+      );
     }
 
     // Conversa existente: processar resposta do lead
-    const progress = await this.conversationProgressRepository.findByConversationId(
-      conversation.id.toString(),
-    );
+    const progress =
+      await this.conversationProgressRepository.findByConversationId(
+        conversation.id.toString(),
+      );
 
     if (!progress || !progress.waitingForResponse) {
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
-    const currentContent = this.findContent(details, progress.currentStageContentId);
+    const currentContent = this.findContent(
+      details,
+      progress.currentStageContentId,
+    );
 
     if (!currentContent) {
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     // Salvar resposta do lead
     let answerId: string | null = null;
     let score: number | null = null;
 
-    if (currentContent.contentType === ContentType.MULTIPLE_CHOICE && currentContent.answers.length > 0) {
+    if (
+      currentContent.contentType === ContentType.MULTIPLE_CHOICE &&
+      currentContent.answers.length > 0
+    ) {
       const trimmed = messageText.trim();
       const indexMatch = parseInt(trimmed, 10);
-      const matched = currentContent.answers.find((a, i) =>
-        (!isNaN(indexMatch) && indexMatch === i + 1) ||
-        a.content.trim().toLowerCase() === trimmed.toLowerCase(),
+      const matched = currentContent.answers.find(
+        (a, i) =>
+          (!isNaN(indexMatch) && indexMatch === i + 1) ||
+          a.content.trim().toLowerCase() === trimmed.toLowerCase(),
       );
 
       if (!matched) {
@@ -175,13 +207,22 @@ export class ProcessMessageUseCase {
     if (!next) {
       conversation.finish();
       await this.conversationRepository.update(conversation);
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     progress.advanceTo(next.stageId, next.stageContentId);
     await this.conversationProgressRepository.update(progress);
 
-    return this.executeFromCurrentPosition(progress, details, conversation, userId);
+    return this.executeFromCurrentPosition(
+      progress,
+      details,
+      conversation,
+      userId,
+    );
   }
 
   private async executeFromCurrentPosition(
@@ -193,7 +234,10 @@ export class ProcessMessageUseCase {
     const messagesToSend: string[] = [];
 
     while (true) {
-      const currentContent = this.findContent(details, progress.currentStageContentId);
+      const currentContent = this.findContent(
+        details,
+        progress.currentStageContentId,
+      );
 
       if (!currentContent) break;
 
@@ -235,10 +279,17 @@ export class ProcessMessageUseCase {
       }
     }
 
-    return { conversationId: conversation.id.toString(), userId, messagesToSend };
+    return {
+      conversationId: conversation.id.toString(),
+      userId,
+      messagesToSend,
+    };
   }
 
-  private findContent(details: KanbanDetails, contentId: string): StageContent | null {
+  private findContent(
+    details: KanbanDetails,
+    contentId: string,
+  ): StageContent | null {
     for (const stage of details.stages) {
       const content = stage.contents.find((c) => c.id === contentId);
       if (content) return content;
@@ -255,7 +306,9 @@ export class ProcessMessageUseCase {
     if (stageIndex === -1) return null;
 
     const stage = details.stages[stageIndex] as Stage;
-    const contentIndex = stage.contents.findIndex((c) => c.id === currentContentId);
+    const contentIndex = stage.contents.findIndex(
+      (c) => c.id === currentContentId,
+    );
     if (contentIndex === -1) return null;
 
     if (contentIndex + 1 < stage.contents.length) {

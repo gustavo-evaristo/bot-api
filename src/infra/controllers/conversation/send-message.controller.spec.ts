@@ -16,11 +16,17 @@ describe('SendMessageController', () => {
   });
 
   it('should call use case, send whatsapp message and return sent:true', async () => {
-    vi.mocked(sendMessageUseCase.execute).mockResolvedValue({ leadPhoneNumber: '+5511999999999' });
+    vi.mocked(sendMessageUseCase.execute).mockResolvedValue({
+      leadPhoneNumber: '+5511999999999',
+    });
     vi.mocked(whatsappService.sendMessage).mockResolvedValue();
 
     const req = { user: { id: 'user-1' } } as any;
-    const result = await controller.sendMessage('conv-1', { content: 'Olá!' }, req);
+    const result = await controller.sendMessage(
+      'conv-1',
+      { content: 'Olá!' },
+      req,
+    );
 
     expect(sendMessageUseCase.execute).toHaveBeenCalledWith({
       conversationId: 'conv-1',
@@ -38,12 +44,18 @@ describe('SendMessageController', () => {
 
   it('should propagate error when use case throws', async () => {
     vi.mocked(sendMessageUseCase.execute).mockRejectedValue(
-      new Error('Só é possível enviar mensagens para leads que finalizaram o fluxo.'),
+      new Error(
+        'Só é possível enviar mensagens para leads que finalizaram o fluxo.',
+      ),
     );
 
     await expect(
-      controller.sendMessage('conv-1', { content: 'Oi' }, { user: { id: 'user-1' } } as any),
-    ).rejects.toThrow('Só é possível enviar mensagens para leads que finalizaram o fluxo.');
+      controller.sendMessage('conv-1', { content: 'Oi' }, {
+        user: { id: 'user-1' },
+      } as any),
+    ).rejects.toThrow(
+      'Só é possível enviar mensagens para leads que finalizaram o fluxo.',
+    );
 
     expect(whatsappService.sendMessage).not.toHaveBeenCalled();
   });

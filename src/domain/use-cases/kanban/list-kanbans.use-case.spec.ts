@@ -11,7 +11,12 @@ vi.mock('bcrypt', () => ({
 }));
 
 const makeUser = () =>
-  new UserEntity({ name: 'Ana', email: 'ana@test.com', phone: '5511999999999', password: Password.fromHash('hashed') });
+  new UserEntity({
+    name: 'Ana',
+    email: 'ana@test.com',
+    phone: '5511999999999',
+    password: Password.fromHash('hashed'),
+  });
 
 const makeKanban = (userId: string) =>
   new KanbanEntity({ userId, title: 'K', description: 'D' });
@@ -22,7 +27,9 @@ describe('ListKanbansUseCase', () => {
   let useCase: ListKanbansUseCase;
 
   beforeEach(() => {
-    kanbanRepository = { findManyByUserId: vi.fn() } as unknown as IKanbanRepository;
+    kanbanRepository = {
+      findManyByUserId: vi.fn(),
+    } as unknown as IKanbanRepository;
     userRepository = { get: vi.fn() } as unknown as IUserRepository;
     useCase = new ListKanbansUseCase(kanbanRepository, userRepository);
   });
@@ -34,13 +41,18 @@ describe('ListKanbansUseCase', () => {
 
   it('should return kanbans for the user', async () => {
     const user = makeUser();
-    const kanbans = [makeKanban(user.id.toString()), makeKanban(user.id.toString())];
+    const kanbans = [
+      makeKanban(user.id.toString()),
+      makeKanban(user.id.toString()),
+    ];
     vi.mocked(userRepository.get).mockResolvedValue(user);
     vi.mocked(kanbanRepository.findManyByUserId).mockResolvedValue(kanbans);
 
     const result = await useCase.execute(user.id.toString());
 
     expect(result).toEqual(kanbans);
-    expect(kanbanRepository.findManyByUserId).toHaveBeenCalledWith(user.id.toString());
+    expect(kanbanRepository.findManyByUserId).toHaveBeenCalledWith(
+      user.id.toString(),
+    );
   });
 });
