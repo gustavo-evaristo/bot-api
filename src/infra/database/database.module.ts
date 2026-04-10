@@ -74,6 +74,7 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
     },
   ],
   exports: [
+    PrismaService,
     IUserRepository,
     IKanbanRepository,
     IStageRepository,

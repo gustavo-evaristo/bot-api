@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { WASocket } from '@whiskeysockets/baileys';
 import * as QRCode from 'qrcode';
 import { WhatsappGateway } from './whatsapp.gateway';
@@ -16,11 +16,12 @@ import { useWhatsAppAuthState } from './whatsapp-auth-state';
 const RECONNECT_BATCH_SIZE = 10;
 
 @Injectable()
-export class WhatsappService implements OnModuleInit {
+export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private sessions = new Map<string, WASocket>();
   private pendingSessions = new Set<string>();
   private stores = new Map<string, any>();
+  private leaderMode = false;
 
   constructor(
     private readonly gateway: WhatsappGateway,
@@ -29,7 +30,11 @@ export class WhatsappService implements OnModuleInit {
     private readonly sessionRepository: IWhatsAppSessionRepository,
   ) {}
 
-  async onModuleInit() {
+  setLeaderMode(value: boolean) {
+    this.leaderMode = value;
+  }
+
+  async startAllSessions(): Promise<void> {
     const userIds = await this.sessionRepository.findAllUserIds();
     if (userIds.length === 0) return;
 
@@ -45,6 +50,17 @@ export class WhatsappService implements OnModuleInit {
         ),
       );
     }
+  }
+
+  async stopAllSessions(): Promise<void> {
+    for (const [, sock] of this.sessions) {
+      try {
+        (sock as any).end?.();
+      } catch {}
+    }
+    this.sessions.clear();
+    this.stores.clear();
+    this.pendingSessions.clear();
   }
 
   async startSession(userId: string): Promise<void> {
@@ -141,7 +157,7 @@ export class WhatsappService implements OnModuleInit {
             );
             await this.sessionRepository.delete(userId);
             this.stores.delete(userId);
-          } else {
+          } else if (this.leaderMode) {
             // Código 440 = Connection Replaced (outra instância tomou a sessão).
             // Aguarda antes de reconectar para evitar loop de kick mútuo.
             const delay =
@@ -156,6 +172,10 @@ export class WhatsappService implements OnModuleInit {
                 this.logger.error(`Erro ao reconectar ${userId}:`, err),
               );
             }, delay);
+          } else {
+            this.logger.log(
+              `Conexão encerrada para ${userId} (código ${statusCode}). Não reconectando (modo standby).`,
+            );
           }
         }
       },

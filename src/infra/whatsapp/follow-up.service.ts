@@ -8,6 +8,7 @@ import {
 } from 'src/domain/entities/message-history.entity';
 import { UUID } from 'src/domain/entities/vos';
 import { WhatsappService } from './whatsapp.service';
+import { LeaderElectionService } from './leader-election.service';
 
 @Injectable()
 export class FollowUpService {
@@ -17,10 +18,13 @@ export class FollowUpService {
     private readonly conversationProgressRepository: IConversationProgressRepository,
     private readonly messageHistoryRepository: IMessageHistoryRepository,
     private readonly whatsappService: WhatsappService,
+    private readonly leaderElection: LeaderElectionService,
   ) {}
 
   @Cron('*/5 * * * *')
   async sendConversationFollowUps() {
+    if (!this.leaderElection.isLeader()) return;
+
     const pending =
       await this.conversationProgressRepository.findPendingFollowUps(30);
 

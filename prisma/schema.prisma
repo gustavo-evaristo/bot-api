@@ -138,3 +138,11 @@ model whatsapp_sessions {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model instance_lock {
+  lockKey    String   @id
+  instanceId String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
