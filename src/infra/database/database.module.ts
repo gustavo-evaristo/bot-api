@@ -3,15 +3,13 @@ import { UserRepository } from './repositories/user.repository';
 import { IUserRepository } from 'src/domain/repositories/user.repository';
 import { PrismaService } from './prisma.service';
 import {
-  IAnswerRepository,
+  IFlowNodeRepository,
   IKanbanRepository,
-  IStageContentRepository,
-  IStageRepository,
+  INodeOptionRepository,
 } from 'src/domain/repositories';
 import { KanbanRepository } from './repositories/kanban.repository';
-import { StageRepository } from './repositories/stage.repository';
-import { StageContentRepository } from './repositories/stage-content.repository';
-import { AnswerRepository } from './repositories/answer.repository';
+import { FlowNodeRepository } from './repositories/flow-node.repository';
+import { NodeOptionRepository } from './repositories/node-option.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { ConversationRepository } from './repositories/conversation.repository';
 import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
@@ -37,16 +35,12 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
       useClass: KanbanRepository,
     },
     {
-      provide: IStageRepository,
-      useClass: StageRepository,
+      provide: IFlowNodeRepository,
+      useClass: FlowNodeRepository,
     },
     {
-      provide: IStageContentRepository,
-      useClass: StageContentRepository,
-    },
-    {
-      provide: IAnswerRepository,
-      useClass: AnswerRepository,
+      provide: INodeOptionRepository,
+      useClass: NodeOptionRepository,
     },
     {
       provide: IConversationRepository,
@@ -77,9 +71,8 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
     PrismaService,
     IUserRepository,
     IKanbanRepository,
-    IStageRepository,
-    IStageContentRepository,
-    IAnswerRepository,
+    IFlowNodeRepository,
+    INodeOptionRepository,
     IConversationRepository,
     IConversationProgressRepository,
     ILeadResponseRepository,

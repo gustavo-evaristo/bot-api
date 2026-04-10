@@ -1,59 +1,44 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
 
-class AnswerResponse {
+class NodeOptionResponse {
   @ApiProperty({ example: randomUUID() })
   id: string;
 
-  @ApiProperty({ example: 'Sim, já conheço o modelo de consignado' })
+  @ApiProperty({ example: 'Sim, tenho interesse' })
   content: string;
 
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 10 })
   score: number;
+
+  @ApiProperty({ example: 0 })
+  order: number;
+
+  @ApiPropertyOptional({ example: randomUUID(), nullable: true })
+  nextNodeId: string | null;
 }
 
-class StageContentResponse {
+class FlowNodeResponse {
   @ApiProperty({ example: randomUUID() })
   id: string;
 
-  @ApiProperty({ example: 'Você já conhece o modelo de consignado?' })
+  @ApiProperty({ example: 'QUESTION_MULTIPLE_CHOICE' })
+  type: string;
+
+  @ApiProperty({ example: 'Você já conhece o produto?' })
   content: string;
 
-  @ApiProperty({ example: 'multiple_choice' })
-  contentType: string;
+  @ApiPropertyOptional({ example: randomUUID(), nullable: true })
+  defaultNextNodeId: string | null;
 
-  @ApiProperty({
-    type: AnswerResponse,
-    isArray: true,
-    example: [
-      {
-        content: 'Sim, já conheço o modelo de consignado',
-        score: 1,
-      },
-      {
-        content: 'Não, gostaria que me explicasse como funciona',
-        score: 0,
-      },
-    ],
-  })
-  answers: AnswerResponse[];
-}
+  @ApiProperty({ example: 0 })
+  x: number;
 
-class StageResponse {
-  @ApiProperty({ example: randomUUID() })
-  id: string;
+  @ApiProperty({ example: 0 })
+  y: number;
 
-  @ApiProperty({ example: 'Dados Básicos' })
-  title: string;
-
-  @ApiProperty({ example: 'Coleta inicial de dados do cliente' })
-  description: string;
-
-  @ApiProperty({
-    type: StageContentResponse,
-    isArray: true,
-  })
-  contents: StageContentResponse[];
+  @ApiProperty({ type: NodeOptionResponse, isArray: true })
+  options: NodeOptionResponse[];
 }
 
 export class GetKanbanResponse {
@@ -69,9 +54,9 @@ export class GetKanbanResponse {
   @ApiProperty({ example: randomUUID() })
   userId: string;
 
-  @ApiProperty({
-    type: StageResponse,
-    isArray: true,
-  })
-  stages: StageResponse[];
+  @ApiPropertyOptional({ example: randomUUID(), nullable: true })
+  startNodeId: string | null;
+
+  @ApiProperty({ type: FlowNodeResponse, isArray: true })
+  nodes: FlowNodeResponse[];
 }

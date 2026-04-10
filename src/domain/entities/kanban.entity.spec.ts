@@ -32,8 +32,11 @@ describe('KanbanEntity', () => {
   });
 
   describe('active()', () => {
-    it('should activate the kanban when phoneNumber is set', () => {
-      const kanban = makeKanban({ phoneNumber: '5511999999999' });
+    it('should activate the kanban when phoneNumber and startNodeId are set', () => {
+      const kanban = makeKanban({
+        phoneNumber: '5511999999999',
+        startNodeId: 'node-1',
+      });
       kanban.active();
       expect(kanban.isActive).toBe(true);
     });
@@ -42,6 +45,13 @@ describe('KanbanEntity', () => {
       const kanban = makeKanban();
       expect(() => kanban.active()).toThrow(
         'Phone number is required to activate the kanban',
+      );
+    });
+
+    it('should throw when activating without startNodeId', () => {
+      const kanban = makeKanban({ phoneNumber: '5511999999999' });
+      expect(() => kanban.active()).toThrow(
+        'A start node is required to activate the kanban',
       );
     });
   });

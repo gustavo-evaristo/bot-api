@@ -25,12 +25,14 @@ const makeUser = (id = UUID.generate()) => {
 const makeKanban = (
   userId: UUID,
   phoneNumber: string | null = '5511999999999',
+  startNodeId: string | null = 'node-1',
 ) =>
   new KanbanEntity({
     userId: userId.toString(),
     title: 'Kanban',
     description: 'Desc',
     phoneNumber,
+    startNodeId,
   });
 
 describe('ActiveKanbanUseCase', () => {

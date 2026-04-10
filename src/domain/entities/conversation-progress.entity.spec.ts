@@ -5,8 +5,7 @@ import { UUID } from './vos';
 const makeProgress = () =>
   new ConversationProgressEntity({
     conversationId: UUID.generate().toString(),
-    currentStageId: 'stage-1',
-    currentStageContentId: 'content-1',
+    currentNodeId: 'node-1',
   });
 
 describe('ConversationProgressEntity', () => {
@@ -24,8 +23,7 @@ describe('ConversationProgressEntity', () => {
     it('should accept waitingForResponse=true', () => {
       const progress = new ConversationProgressEntity({
         conversationId: UUID.generate().toString(),
-        currentStageId: 'stage-1',
-        currentStageContentId: 'content-1',
+        currentNodeId: 'node-1',
         waitingForResponse: true,
       });
       expect(progress.waitingForResponse).toBe(true);
@@ -33,17 +31,16 @@ describe('ConversationProgressEntity', () => {
   });
 
   describe('advanceTo()', () => {
-    it('should update stageId and contentId', () => {
+    it('should update currentNodeId', () => {
       const progress = makeProgress();
-      progress.advanceTo('stage-2', 'content-5');
-      expect(progress.currentStageId).toBe('stage-2');
-      expect(progress.currentStageContentId).toBe('content-5');
+      progress.advanceTo('node-2');
+      expect(progress.currentNodeId).toBe('node-2');
     });
 
     it('should reset waitingForResponse to false', () => {
       const progress = makeProgress();
       progress.waitForResponse();
-      progress.advanceTo('stage-2', 'content-5');
+      progress.advanceTo('node-2');
       expect(progress.waitingForResponse).toBe(false);
     });
   });

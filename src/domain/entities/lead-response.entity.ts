@@ -3,9 +3,9 @@ import { UUID } from './vos';
 type LeadResponseEntityProps = {
   id?: string | UUID | null;
   conversationId: string | UUID;
-  stageContentId: string;
+  nodeId: string;
   responseText: string;
-  answerId?: string | null;
+  nodeOptionId?: string | null;
   score?: number | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
@@ -14,9 +14,9 @@ type LeadResponseEntityProps = {
 export class LeadResponseEntity {
   id: UUID;
   conversationId: UUID;
-  stageContentId: string;
+  nodeId: string;
   responseText: string;
-  answerId: string | null;
+  nodeOptionId: string | null;
   score: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -36,9 +36,9 @@ export class LeadResponseEntity {
       this.conversationId = UUID.from(props.conversationId);
     }
 
-    this.stageContentId = props.stageContentId;
+    this.nodeId = props.nodeId;
     this.responseText = props.responseText;
-    this.answerId = props.answerId ?? null;
+    this.nodeOptionId = props.nodeOptionId ?? null;
     this.score = props.score ?? null;
 
     const createdAt = props.createdAt || new Date();

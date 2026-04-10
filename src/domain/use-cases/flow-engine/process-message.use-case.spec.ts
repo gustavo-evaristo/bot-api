@@ -11,7 +11,7 @@ import {
   ConversationStatus,
 } from 'src/domain/entities/conversation.entity';
 import { ConversationProgressEntity } from 'src/domain/entities/conversation-progress.entity';
-import { ContentType } from 'src/domain/entities/stage-content.entity';
+import { NodeType } from 'src/domain/entities/flow-node.entity';
 import { UUID } from 'src/domain/entities/vos';
 
 // ---------- helpers ----------
@@ -23,29 +23,30 @@ const makeKanban = () =>
     description: 'Desc',
     phoneNumber: '5511000000000',
     isActive: true,
+    startNodeId: 'node-1',
   });
 
 const makeDetails = (
-  contents: { id: string; contentType: ContentType; answers?: any[] }[],
+  nodes: {
+    id: string;
+    type: NodeType;
+    defaultNextNodeId?: string | null;
+    options?: { id: string; content: string; score: number; order: number; nextNodeId: string | null }[];
+  }[],
 ) => ({
   id: 'kanban-1',
   title: 'Test Kanban',
   description: 'Desc',
   userId: 'user-1',
-  stages: [
-    {
-      id: 'stage-1',
-      title: 'Stage 1',
-      description: '',
-      order: 0,
-      contents: contents.map((c, i) => ({
-        order: i,
-        answers: [],
-        ...c,
-        content: `Message ${c.id}`,
-      })),
-    },
-  ],
+  startNodeId: nodes[0]?.id ?? null,
+  nodes: nodes.map((n) => ({
+    defaultNextNodeId: null,
+    options: [],
+    content: `Message ${n.id}`,
+    x: 0,
+    y: 0,
+    ...n,
+  })),
 });
 
 const makeConversation = (kanbanId: string) =>
@@ -53,13 +54,12 @@ const makeConversation = (kanbanId: string) =>
 
 const makeProgress = (
   conversationId: string,
-  contentId: string,
+  nodeId: string,
   waiting = false,
 ) =>
   new ConversationProgressEntity({
     conversationId,
-    currentStageId: 'stage-1',
-    currentStageContentId: contentId,
+    currentNodeId: nodeId,
     waitingForResponse: waiting,
   });
 
@@ -123,8 +123,8 @@ describe('ProcessMessageUseCase', () => {
   it('should send all consecutive TEXT messages when starting a new conversation', async () => {
     const kanban = makeKanban();
     const details = makeDetails([
-      { id: 'c1', contentType: ContentType.TEXT },
-      { id: 'c2', contentType: ContentType.TEXT },
+      { id: 'node-1', type: NodeType.TEXT, defaultNextNodeId: 'node-2' },
+      { id: 'node-2', type: NodeType.TEXT, defaultNextNodeId: null },
     ]);
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
@@ -142,16 +142,16 @@ describe('ProcessMessageUseCase', () => {
     });
 
     expect(messagesToSend).toHaveLength(2);
-    expect(messagesToSend[0]).toBe('Message c1');
-    expect(messagesToSend[1]).toBe('Message c2');
+    expect(messagesToSend[0]).toBe('Message node-1');
+    expect(messagesToSend[1]).toBe('Message node-2');
   });
 
   it('should stop and wait for response when hitting FREE_INPUT', async () => {
     const kanban = makeKanban();
     const details = makeDetails([
-      { id: 'c1', contentType: ContentType.TEXT },
-      { id: 'c2', contentType: ContentType.FREE_INPUT },
-      { id: 'c3', contentType: ContentType.TEXT },
+      { id: 'node-1', type: NodeType.TEXT, defaultNextNodeId: 'node-2' },
+      { id: 'node-2', type: NodeType.QUESTION_FREE_INPUT, defaultNextNodeId: 'node-3' },
+      { id: 'node-3', type: NodeType.TEXT, defaultNextNodeId: null },
     ]);
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
@@ -167,20 +167,20 @@ describe('ProcessMessageUseCase', () => {
       messageText: 'Hi',
     });
 
-    // Should send TEXT then FREE_INPUT question, but not c3
+    // Should send TEXT then FREE_INPUT question, but not node-3
     expect(messagesToSend).toHaveLength(2);
-    expect(messagesToSend[1]).toBe('Message c2');
+    expect(messagesToSend[1]).toBe('Message node-2');
   });
 
   it('should send numbered options for MULTIPLE_CHOICE', async () => {
     const kanban = makeKanban();
     const details = makeDetails([
       {
-        id: 'c1',
-        contentType: ContentType.MULTIPLE_CHOICE,
-        answers: [
-          { id: 'a1', content: 'Yes', score: 10 },
-          { id: 'a2', content: 'No', score: 0 },
+        id: 'node-1',
+        type: NodeType.QUESTION_MULTIPLE_CHOICE,
+        options: [
+          { id: 'opt-1', content: 'Yes', score: 10, order: 0, nextNodeId: null },
+          { id: 'opt-2', content: 'No', score: 0, order: 1, nextNodeId: null },
         ],
       },
     ]);
@@ -205,24 +205,20 @@ describe('ProcessMessageUseCase', () => {
 
   // ---- replying to FREE_INPUT ----
 
-  it('should save lead response and advance to next content', async () => {
+  it('should save lead response and advance to next node', async () => {
     const kanban = makeKanban();
     const details = makeDetails([
-      { id: 'c1', contentType: ContentType.FREE_INPUT },
-      { id: 'c2', contentType: ContentType.TEXT },
+      { id: 'node-1', type: NodeType.QUESTION_FREE_INPUT, defaultNextNodeId: 'node-2' },
+      { id: 'node-2', type: NodeType.TEXT, defaultNextNodeId: null },
     ]);
 
     const conversation = makeConversation(kanban.id.toString());
-    const progress = makeProgress(conversation.id.toString(), 'c1', true);
+    const progress = makeProgress(conversation.id.toString(), 'node-1', true);
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
-    vi.mocked(conversationRepository.findActive).mockResolvedValue(
-      conversation,
-    );
-    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(
-      progress,
-    );
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(conversation);
+    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(progress);
     vi.mocked(leadResponseRepository.create).mockResolvedValue();
     vi.mocked(progressRepository.update).mockResolvedValue();
     vi.mocked(conversationRepository.update).mockResolvedValue();
@@ -235,35 +231,70 @@ describe('ProcessMessageUseCase', () => {
 
     expect(leadResponseRepository.create).toHaveBeenCalledOnce();
     expect(messagesToSend).toHaveLength(1);
-    expect(messagesToSend[0]).toBe('Message c2');
+    expect(messagesToSend[0]).toBe('Message node-2');
   });
 
-  // ---- replying to MULTIPLE_CHOICE ----
+  // ---- replying to MULTIPLE_CHOICE with branching ----
 
-  it('should associate answerId and score when saving a multiple choice response', async () => {
+  it('should route to the option nextNodeId when picking a multiple choice answer', async () => {
     const kanban = makeKanban();
     const details = makeDetails([
       {
-        id: 'c1',
-        contentType: ContentType.MULTIPLE_CHOICE,
-        answers: [
-          { id: 'a1', content: 'Yes', score: 10 },
-          { id: 'a2', content: 'No', score: 0 },
+        id: 'node-1',
+        type: NodeType.QUESTION_MULTIPLE_CHOICE,
+        options: [
+          { id: 'opt-1', content: 'Yes', score: 10, order: 0, nextNodeId: 'node-yes' },
+          { id: 'opt-2', content: 'No', score: 0, order: 1, nextNodeId: 'node-no' },
+        ],
+      },
+      { id: 'node-yes', type: NodeType.TEXT, defaultNextNodeId: null },
+      { id: 'node-no', type: NodeType.TEXT, defaultNextNodeId: null },
+    ]);
+
+    const conversation = makeConversation(kanban.id.toString());
+    const progress = makeProgress(conversation.id.toString(), 'node-1', true);
+
+    vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
+    vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(conversation);
+    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(progress);
+    vi.mocked(leadResponseRepository.create).mockResolvedValue();
+    vi.mocked(progressRepository.update).mockResolvedValue();
+    vi.mocked(conversationRepository.update).mockResolvedValue();
+
+    // Lead escolhe "Yes" → deve ir para node-yes
+    const { messagesToSend } = await useCase.execute({
+      botPhoneNumber: '5511000000000',
+      leadPhoneNumber: '5511999999999',
+      messageText: 'Yes',
+    });
+
+    const savedResponse = vi.mocked(leadResponseRepository.create).mock.calls[0][0];
+    expect(savedResponse.nodeOptionId).toBe('opt-1');
+    expect(savedResponse.score).toBe(10);
+    expect(messagesToSend[0]).toBe('Message node-yes');
+  });
+
+  it('should associate nodeOptionId and score when saving a multiple choice response', async () => {
+    const kanban = makeKanban();
+    const details = makeDetails([
+      {
+        id: 'node-1',
+        type: NodeType.QUESTION_MULTIPLE_CHOICE,
+        options: [
+          { id: 'opt-1', content: 'Yes', score: 10, order: 0, nextNodeId: null },
+          { id: 'opt-2', content: 'No', score: 0, order: 1, nextNodeId: null },
         ],
       },
     ]);
 
     const conversation = makeConversation(kanban.id.toString());
-    const progress = makeProgress(conversation.id.toString(), 'c1', true);
+    const progress = makeProgress(conversation.id.toString(), 'node-1', true);
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
-    vi.mocked(conversationRepository.findActive).mockResolvedValue(
-      conversation,
-    );
-    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(
-      progress,
-    );
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(conversation);
+    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(progress);
     vi.mocked(leadResponseRepository.create).mockResolvedValue();
     vi.mocked(progressRepository.update).mockResolvedValue();
     vi.mocked(conversationRepository.update).mockResolvedValue();
@@ -274,31 +305,26 @@ describe('ProcessMessageUseCase', () => {
       messageText: 'Yes',
     });
 
-    const savedResponse = vi.mocked(leadResponseRepository.create).mock
-      .calls[0][0];
-    expect(savedResponse.answerId).toBe('a1');
+    const savedResponse = vi.mocked(leadResponseRepository.create).mock.calls[0][0];
+    expect(savedResponse.nodeOptionId).toBe('opt-1');
     expect(savedResponse.score).toBe(10);
   });
 
   // ---- end of flow ----
 
-  it('should finish the conversation after the last StageContent', async () => {
+  it('should finish the conversation after the last node', async () => {
     const kanban = makeKanban();
     const details = makeDetails([
-      { id: 'c1', contentType: ContentType.FREE_INPUT },
+      { id: 'node-1', type: NodeType.QUESTION_FREE_INPUT, defaultNextNodeId: null },
     ]);
 
     const conversation = makeConversation(kanban.id.toString());
-    const progress = makeProgress(conversation.id.toString(), 'c1', true);
+    const progress = makeProgress(conversation.id.toString(), 'node-1', true);
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);
-    vi.mocked(conversationRepository.findActive).mockResolvedValue(
-      conversation,
-    );
-    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(
-      progress,
-    );
+    vi.mocked(conversationRepository.findActive).mockResolvedValue(conversation);
+    vi.mocked(progressRepository.findByConversationId).mockResolvedValue(progress);
     vi.mocked(leadResponseRepository.create).mockResolvedValue();
     vi.mocked(conversationRepository.update).mockResolvedValue();
 
@@ -308,8 +334,7 @@ describe('ProcessMessageUseCase', () => {
       messageText: 'Final answer',
     });
 
-    const updatedConversation = vi.mocked(conversationRepository.update).mock
-      .calls[0][0];
+    const updatedConversation = vi.mocked(conversationRepository.update).mock.calls[0][0];
     expect(updatedConversation.isActive()).toBe(false);
   });
 
@@ -317,13 +342,13 @@ describe('ProcessMessageUseCase', () => {
 
   it('should not start a new flow when lead messages within 24h of finishing', async () => {
     const kanban = makeKanban();
-    const details = makeDetails([{ id: 'c1', contentType: ContentType.TEXT }]);
+    const details = makeDetails([{ id: 'node-1', type: NodeType.TEXT }]);
 
     const finishedConversation = new ConversationEntity({
       kanbanId: kanban.id.toString(),
       leadPhoneNumber: '5511999999999',
       status: ConversationStatus.FINISHED,
-      updatedAt: subHours(new Date(), 2), // finished 2h ago
+      updatedAt: subHours(new Date(), 2),
     });
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
@@ -346,13 +371,15 @@ describe('ProcessMessageUseCase', () => {
 
   it('should start a new flow when lead messages after the 24h cooldown', async () => {
     const kanban = makeKanban();
-    const details = makeDetails([{ id: 'c1', contentType: ContentType.TEXT }]);
+    const details = makeDetails([
+      { id: 'node-1', type: NodeType.TEXT, defaultNextNodeId: null },
+    ]);
 
     const finishedConversation = new ConversationEntity({
       kanbanId: kanban.id.toString(),
       leadPhoneNumber: '5511999999999',
       status: ConversationStatus.FINISHED,
-      updatedAt: subHours(new Date(), 25), // finished 25h ago
+      updatedAt: subHours(new Date(), 25),
     });
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
@@ -378,7 +405,9 @@ describe('ProcessMessageUseCase', () => {
 
   it('should start a new flow when there is no previous finished conversation', async () => {
     const kanban = makeKanban();
-    const details = makeDetails([{ id: 'c1', contentType: ContentType.TEXT }]);
+    const details = makeDetails([
+      { id: 'node-1', type: NodeType.TEXT, defaultNextNodeId: null },
+    ]);
 
     vi.mocked(kanbanRepository.findByPhoneNumber).mockResolvedValue(kanban);
     vi.mocked(kanbanRepository.getDetails).mockResolvedValue(details);

@@ -17,8 +17,7 @@ export class ConversationProgressRepository implements IConversationProgressRepo
       data: {
         id: progress.id.toString(),
         conversationId: progress.conversationId.toString(),
-        currentStageId: progress.currentStageId,
-        currentStageContentId: progress.currentStageContentId,
+        currentNodeId: progress.currentNodeId,
         waitingForResponse: progress.waitingForResponse,
         waitingForResponseSince: progress.waitingForResponseSince,
         followUpSentAt: progress.followUpSentAt,
@@ -48,8 +47,7 @@ export class ConversationProgressRepository implements IConversationProgressRepo
     await this.prismaService.conversation_progress.update({
       where: { conversationId: progress.conversationId.toString() },
       data: {
-        currentStageId: progress.currentStageId,
-        currentStageContentId: progress.currentStageContentId,
+        currentNodeId: progress.currentNodeId,
         waitingForResponse: progress.waitingForResponse,
         waitingForResponseSince: progress.waitingForResponseSince,
         followUpSentAt: progress.followUpSentAt,

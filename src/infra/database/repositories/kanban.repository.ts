@@ -11,9 +11,17 @@ export class KanbanRepository implements IKanbanRepository {
 
   async create(kanban: KanbanEntity): Promise<void> {
     const data: Prisma.kanbansCreateArgs['data'] = {
-      ...kanban,
       id: kanban.id.toString(),
       userId: kanban.userId.toString(),
+      isActive: kanban.isActive,
+      isDeleted: kanban.isDeleted,
+      title: kanban.title,
+      description: kanban.description,
+      imageUrl: kanban.imageUrl,
+      phoneNumber: kanban.phoneNumber,
+      startNodeId: kanban.startNodeId,
+      createdAt: kanban.createdAt,
+      updatedAt: kanban.updatedAt,
     };
 
     await this.prismaService.kanbans.create({ data });
@@ -45,6 +53,7 @@ export class KanbanRepository implements IKanbanRepository {
       description: kanban.description,
       imageUrl: kanban.imageUrl,
       phoneNumber: kanban.phoneNumber,
+      startNodeId: kanban.startNodeId,
       createdAt: kanban.createdAt,
       updatedAt: kanban.updatedAt,
     };
@@ -77,18 +86,12 @@ export class KanbanRepository implements IKanbanRepository {
     const kanban = await this.prismaService.kanbans.findUnique({
       where: { id, isDeleted: false },
       include: {
-        stages: {
+        nodes: {
           where: { isDeleted: false },
-          orderBy: { order: 'asc' },
           include: {
-            stageContents: {
+            options: {
               where: { isDeleted: false },
               orderBy: { order: 'asc' },
-              include: {
-                answers: {
-                  where: { isDeleted: false },
-                },
-              },
             },
           },
         },
@@ -104,21 +107,20 @@ export class KanbanRepository implements IKanbanRepository {
       title: kanban.title,
       description: kanban.description,
       userId: kanban.userId,
-      stages: kanban.stages.map((stage) => ({
-        id: stage.id,
-        title: stage.title,
-        description: stage.description,
-        order: stage.order,
-        contents: stage.stageContents.map((stageContent) => ({
-          id: stageContent.id,
-          content: stageContent.content,
-          contentType: stageContent.contentType,
-          order: stageContent.order,
-          answers: stageContent.answers.map((answer) => ({
-            id: answer.id,
-            content: answer.content,
-            score: answer.score,
-          })),
+      startNodeId: kanban.startNodeId ?? null,
+      nodes: kanban.nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        content: node.content,
+        defaultNextNodeId: node.defaultNextNodeId ?? null,
+        x: node.x,
+        y: node.y,
+        options: node.options.map((opt) => ({
+          id: opt.id,
+          content: opt.content,
+          score: opt.score,
+          order: opt.order,
+          nextNodeId: opt.nextNodeId ?? null,
         })),
       })),
     };

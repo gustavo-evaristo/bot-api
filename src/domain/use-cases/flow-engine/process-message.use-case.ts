@@ -7,8 +7,8 @@ import { ILeadResponseRepository } from 'src/domain/repositories/lead-response.r
 import { ConversationEntity } from 'src/domain/entities/conversation.entity';
 import { ConversationProgressEntity } from 'src/domain/entities/conversation-progress.entity';
 import { LeadResponseEntity } from 'src/domain/entities/lead-response.entity';
-import { ContentType } from 'src/domain/entities/stage-content.entity';
-import { KanbanDetails } from 'src/domain/entities/kanban.entity';
+import { NodeType } from 'src/domain/entities/flow-node.entity';
+import { KanbanDetails, FlowNodeDetail } from 'src/domain/entities/kanban.entity';
 
 interface Input {
   botPhoneNumber: string;
@@ -21,25 +21,6 @@ interface Output {
   conversationId: string | null;
   userId: string | null;
   messagesToSend: string[];
-}
-
-interface StageContent {
-  id: string;
-  content: string;
-  contentType: string;
-  order: number;
-  answers: { id: string; content: string; score: number }[];
-}
-
-interface Stage {
-  id: string;
-  order: number;
-  contents: StageContent[];
-}
-
-interface NextPosition {
-  stageId: string;
-  stageContentId: string;
 }
 
 @Injectable()
@@ -61,7 +42,13 @@ export class ProcessMessageUseCase {
       await this.kanbanRepository.findByPhoneNumber(botPhoneNumber);
 
     if (!kanban) {
-      return { conversationId: null, userId: null, messagesToSend: [] };
+      return {
+        conversationId: null,
+        userId: null,
+        messagesToSend: [
+          'Olá! No momento não há atendimento disponível neste número.',
+        ],
+      };
     }
 
     const userId = kanban.userId.toString();
@@ -69,9 +56,11 @@ export class ProcessMessageUseCase {
       kanban.id.toString(),
     );
 
-    if (!details || details.stages.length === 0) {
+    if (!details || !details.startNodeId || details.nodes.length === 0) {
       return { conversationId: null, userId, messagesToSend: [] };
     }
+
+    const nodeMap = this.buildNodeMap(details);
 
     let conversation = await this.conversationRepository.findActive(
       kanban.id.toString(),
@@ -96,23 +85,20 @@ export class ProcessMessageUseCase {
         };
       }
 
-      conversation = new ConversationEntity({
-        kanbanId: kanban.id,
-        leadPhoneNumber: leadPhoneNumber,
-        leadName: leadName ?? null,
-      });
-
-      const firstStage = details.stages[0];
-      const firstContent = firstStage.contents[0];
-
-      if (!firstContent) {
+      const startNode = nodeMap.get(details.startNodeId);
+      if (!startNode) {
         return { conversationId: null, userId, messagesToSend: [] };
       }
 
+      conversation = new ConversationEntity({
+        kanbanId: kanban.id,
+        leadPhoneNumber,
+        leadName: leadName ?? null,
+      });
+
       const progress = new ConversationProgressEntity({
         conversationId: conversation.id,
-        currentStageId: firstStage.id,
-        currentStageContentId: firstContent.id,
+        currentNodeId: details.startNodeId,
         waitingForResponse: false,
       });
 
@@ -121,7 +107,7 @@ export class ProcessMessageUseCase {
 
       return this.executeFromCurrentPosition(
         progress,
-        details,
+        nodeMap,
         conversation,
         userId,
       );
@@ -141,12 +127,9 @@ export class ProcessMessageUseCase {
       };
     }
 
-    const currentContent = this.findContent(
-      details,
-      progress.currentStageContentId,
-    );
+    const currentNode = nodeMap.get(progress.currentNodeId);
 
-    if (!currentContent) {
+    if (!currentNode) {
       return {
         conversationId: conversation.id.toString(),
         userId,
@@ -154,26 +137,26 @@ export class ProcessMessageUseCase {
       };
     }
 
-    // Salvar resposta do lead
-    let answerId: string | null = null;
+    // Determinar próximo nó e salvar resposta
+    let nodeOptionId: string | null = null;
+    let nextNodeId: string | null = null;
     let score: number | null = null;
 
     if (
-      currentContent.contentType === ContentType.MULTIPLE_CHOICE &&
-      currentContent.answers.length > 0
+      currentNode.type === NodeType.QUESTION_MULTIPLE_CHOICE &&
+      currentNode.options.length > 0
     ) {
       const trimmed = messageText.trim();
       const indexMatch = parseInt(trimmed, 10);
-      const matched = currentContent.answers.find(
-        (a, i) =>
+      const sorted = [...currentNode.options].sort((a, b) => a.order - b.order);
+      const matched = sorted.find(
+        (o, i) =>
           (!isNaN(indexMatch) && indexMatch === i + 1) ||
-          a.content.trim().toLowerCase() === trimmed.toLowerCase(),
+          o.content.trim().toLowerCase() === trimmed.toLowerCase(),
       );
 
       if (!matched) {
-        const options = currentContent.answers
-          .map((a, i) => `${i + 1}. ${a.content}`)
-          .join('\n');
+        const options = sorted.map((o, i) => `${i + 1}. ${o.content}`).join('\n');
         return {
           conversationId: conversation.id.toString(),
           userId,
@@ -183,28 +166,25 @@ export class ProcessMessageUseCase {
         };
       }
 
-      answerId = matched.id;
+      nodeOptionId = matched.id;
+      nextNodeId = matched.nextNodeId;
       score = matched.score;
+    } else {
+      // FREE_INPUT: seguir edge padrão do nó
+      nextNodeId = currentNode.defaultNextNodeId;
     }
 
     const leadResponse = new LeadResponseEntity({
       conversationId: conversation.id,
-      stageContentId: currentContent.id,
+      nodeId: currentNode.id,
       responseText: messageText,
-      answerId,
+      nodeOptionId,
       score,
     });
 
     await this.leadResponseRepository.create(leadResponse);
 
-    // Avançar para próxima posição
-    const next = this.getNextPosition(
-      details,
-      progress.currentStageId,
-      progress.currentStageContentId,
-    );
-
-    if (!next) {
+    if (nextNodeId === null) {
       conversation.finish();
       await this.conversationRepository.update(conversation);
       return {
@@ -214,12 +194,12 @@ export class ProcessMessageUseCase {
       };
     }
 
-    progress.advanceTo(next.stageId, next.stageContentId);
+    progress.advanceTo(nextNodeId);
     await this.conversationProgressRepository.update(progress);
 
     return this.executeFromCurrentPosition(
       progress,
-      details,
+      nodeMap,
       conversation,
       userId,
     );
@@ -227,49 +207,45 @@ export class ProcessMessageUseCase {
 
   private async executeFromCurrentPosition(
     progress: ConversationProgressEntity,
-    details: KanbanDetails,
+    nodeMap: Map<string, FlowNodeDetail>,
     conversation: ConversationEntity,
     userId: string,
   ): Promise<Output> {
     const messagesToSend: string[] = [];
 
     while (true) {
-      const currentContent = this.findContent(
-        details,
-        progress.currentStageContentId,
-      );
+      const currentNode = nodeMap.get(progress.currentNodeId);
 
-      if (!currentContent) break;
+      if (!currentNode || currentNode.type === NodeType.END) {
+        conversation.finish();
+        await this.conversationRepository.update(conversation);
+        break;
+      }
 
-      if (currentContent.contentType === ContentType.TEXT) {
-        messagesToSend.push(currentContent.content);
+      if (currentNode.type === NodeType.TEXT) {
+        messagesToSend.push(currentNode.content);
 
-        const next = this.getNextPosition(
-          details,
-          progress.currentStageId,
-          progress.currentStageContentId,
-        );
-
-        if (!next) {
+        if (!currentNode.defaultNextNodeId) {
           conversation.finish();
           await this.conversationRepository.update(conversation);
           break;
         }
 
-        progress.advanceTo(next.stageId, next.stageContentId);
+        progress.advanceTo(currentNode.defaultNextNodeId);
         await this.conversationProgressRepository.update(progress);
       } else {
-        // FREE_INPUT ou MULTIPLE_CHOICE: enviar pergunta e aguardar
-        let message = currentContent.content;
+        // QUESTION_MULTIPLE_CHOICE ou QUESTION_FREE_INPUT
+        let message = currentNode.content;
 
         if (
-          currentContent.contentType === ContentType.MULTIPLE_CHOICE &&
-          currentContent.answers.length > 0
+          currentNode.type === NodeType.QUESTION_MULTIPLE_CHOICE &&
+          currentNode.options.length > 0
         ) {
-          const options = currentContent.answers
-            .map((a, i) => `${i + 1}. ${a.content}`)
-            .join('\n');
-          message = `${currentContent.content}\n\n${options}\n\n_Digite o número da opção desejada._`;
+          const sorted = [...currentNode.options].sort(
+            (a, b) => a.order - b.order,
+          );
+          const opts = sorted.map((o, i) => `${i + 1}. ${o.content}`).join('\n');
+          message = `${currentNode.content}\n\n${opts}\n\n_Digite o número da opção desejada._`;
         }
 
         messagesToSend.push(message);
@@ -286,47 +262,9 @@ export class ProcessMessageUseCase {
     };
   }
 
-  private findContent(
+  private buildNodeMap(
     details: KanbanDetails,
-    contentId: string,
-  ): StageContent | null {
-    for (const stage of details.stages) {
-      const content = stage.contents.find((c) => c.id === contentId);
-      if (content) return content;
-    }
-    return null;
-  }
-
-  private getNextPosition(
-    details: KanbanDetails,
-    currentStageId: string,
-    currentContentId: string,
-  ): NextPosition | null {
-    const stageIndex = details.stages.findIndex((s) => s.id === currentStageId);
-    if (stageIndex === -1) return null;
-
-    const stage = details.stages[stageIndex] as Stage;
-    const contentIndex = stage.contents.findIndex(
-      (c) => c.id === currentContentId,
-    );
-    if (contentIndex === -1) return null;
-
-    if (contentIndex + 1 < stage.contents.length) {
-      return {
-        stageId: stage.id,
-        stageContentId: stage.contents[contentIndex + 1].id,
-      };
-    }
-
-    if (stageIndex + 1 < details.stages.length) {
-      const nextStage = details.stages[stageIndex + 1] as Stage;
-      if (nextStage.contents.length === 0) return null;
-      return {
-        stageId: nextStage.id,
-        stageContentId: nextStage.contents[0].id,
-      };
-    }
-
-    return null;
+  ): Map<string, FlowNodeDetail> {
+    return new Map(details.nodes.map((n) => [n.id, n]));
   }
 }

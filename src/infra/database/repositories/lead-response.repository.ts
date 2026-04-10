@@ -12,9 +12,9 @@ export class LeadResponseRepository implements ILeadResponseRepository {
       data: {
         id: response.id.toString(),
         conversationId: response.conversationId.toString(),
-        stageContentId: response.stageContentId,
+        nodeId: response.nodeId,
         responseText: response.responseText,
-        answerId: response.answerId ?? null,
+        nodeOptionId: response.nodeOptionId ?? null,
         score: response.score ?? null,
         createdAt: response.createdAt,
         updatedAt: response.updatedAt,

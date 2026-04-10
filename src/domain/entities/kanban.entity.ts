@@ -9,6 +9,7 @@ interface KanbanEntityProps {
   description: string;
   imageUrl?: string | null;
   phoneNumber?: string | null;
+  startNodeId?: string | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 }
@@ -19,26 +20,22 @@ interface UpdateKanbanEntityProps {
   imageUrl: string | null;
 }
 
-interface Answers {
+export interface NodeOptionDetail {
   id: string;
   content: string;
   score: number;
+  order: number;
+  nextNodeId: string | null;
 }
 
-interface StageContent {
+export interface FlowNodeDetail {
   id: string;
+  type: string;
   content: string;
-  contentType: string;
-  order: number;
-  answers: Answers[];
-}
-
-interface Stage {
-  id: string;
-  title: string;
-  description: string;
-  order: number;
-  contents: StageContent[];
+  defaultNextNodeId: string | null;
+  x: number;
+  y: number;
+  options: NodeOptionDetail[];
 }
 
 export interface KanbanDetails {
@@ -46,7 +43,8 @@ export interface KanbanDetails {
   title: string;
   description: string;
   userId: string;
-  stages: Stage[];
+  startNodeId: string | null;
+  nodes: FlowNodeDetail[];
 }
 
 export class KanbanEntity {
@@ -58,6 +56,7 @@ export class KanbanEntity {
   description: string;
   imageUrl: string | null;
   phoneNumber: string | null;
+  startNodeId: string | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -82,6 +81,7 @@ export class KanbanEntity {
     this.description = props.description;
     this.imageUrl = props.imageUrl ?? null;
     this.phoneNumber = props.phoneNumber ?? null;
+    this.startNodeId = props.startNodeId ?? null;
 
     const createdAt = props.createdAt || new Date();
 
@@ -96,6 +96,10 @@ export class KanbanEntity {
   active() {
     if (!this.phoneNumber) {
       throw new Error('Phone number is required to activate the kanban');
+    }
+
+    if (!this.startNodeId) {
+      throw new Error('A start node is required to activate the kanban');
     }
 
     this.isActive = true;
@@ -125,6 +129,11 @@ export class KanbanEntity {
     this.touch();
   }
 
+  updateStartNode(startNodeId: string | null) {
+    this.startNodeId = startNodeId;
+    this.touch();
+  }
+
   delete() {
     this.isDeleted = true;
     this.isActive = false;
@@ -140,6 +149,7 @@ export class KanbanEntity {
       isActive: false,
       isDeleted: false,
       phoneNumber: null,
+      startNodeId: null,
     });
   }
 }

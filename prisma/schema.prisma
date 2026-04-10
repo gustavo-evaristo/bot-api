@@ -26,58 +26,52 @@ model users {
 }
 
 model kanbans {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   userId      String
-  user        users    @relation(fields: [userId], references: [id])
-  isActive    Boolean  @default(true)
-  isDeleted   Boolean  @default(false)
+  user        users        @relation(fields: [userId], references: [id])
+  isActive    Boolean      @default(true)
+  isDeleted   Boolean      @default(false)
   title       String
   description String
   imageUrl    String?
   phoneNumber String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  stages        stages[]
+  startNodeId String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  nodes         flow_nodes[]
   conversations conversations[]
 }
 
-model stages {
-  id            String           @id @default(uuid())
-  kanbanId      String
-  kanban        kanbans          @relation(fields: [kanbanId], references: [id])
-  isDeleted     Boolean          @default(false)
-  title         String
-  description   String
-  order         Int              @default(0)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  stageContents stage_contents[]
+model flow_nodes {
+  id                String         @id @default(uuid())
+  kanbanId          String
+  kanban            kanbans        @relation(fields: [kanbanId], references: [id])
+  isDeleted         Boolean        @default(false)
+  type              String
+  content           String
+  defaultNextNodeId String?
+  defaultNextNode   flow_nodes?    @relation("NodeNext", fields: [defaultNextNodeId], references: [id])
+  prevNodes         flow_nodes[]   @relation("NodeNext")
+  incomingFromOpts  node_options[] @relation("OptionNext")
+  x                 Float          @default(0)
+  y                 Float          @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  options           node_options[]
 }
 
-model stage_contents {
-  id             String          @id @default(uuid())
-  stageId        String
-  stage          stages          @relation(fields: [stageId], references: [id])
-  isDeleted      Boolean         @default(false)
-  content        String
-  contentType    String
-  order          Int             @default(0)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  answers        answers[]
-  leadResponses  lead_responses[]
-}
-
-model answers {
-  id             String          @id @default(uuid())
-  stageContentId String
-  stageContent   stage_contents  @relation(fields: [stageContentId], references: [id])
-  isDeleted      Boolean         @default(false)
-  content        String
-  score          Int
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  leadResponses  lead_responses[]
+model node_options {
+  id         String      @id @default(uuid())
+  nodeId     String
+  node       flow_nodes  @relation(fields: [nodeId], references: [id])
+  isDeleted  Boolean     @default(false)
+  content    String
+  score      Int         @default(0)
+  order      Int         @default(0)
+  nextNodeId String?
+  nextNode   flow_nodes? @relation("OptionNext", fields: [nextNodeId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model conversations {
@@ -104,30 +98,27 @@ model message_history {
 }
 
 model conversation_progress {
-  id                      String    @id @default(uuid())
-  conversationId          String    @unique
+  id                      String        @id @default(uuid())
+  conversationId          String        @unique
   conversation            conversations @relation(fields: [conversationId], references: [id])
-  currentStageId          String
-  currentStageContentId   String
-  waitingForResponse      Boolean   @default(false)
+  currentNodeId           String
+  waitingForResponse      Boolean       @default(false)
   waitingForResponseSince DateTime?
   followUpSentAt          DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 }
 
 model lead_responses {
-  id               String         @id @default(uuid())
-  conversationId   String
-  conversation     conversations  @relation(fields: [conversationId], references: [id])
-  stageContentId   String
-  stageContent     stage_contents @relation(fields: [stageContentId], references: [id])
-  answerId         String?
-  answer           answers?       @relation(fields: [answerId], references: [id])
-  responseText     String
-  score            Int?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id             String        @id @default(uuid())
+  conversationId String
+  conversation   conversations @relation(fields: [conversationId], references: [id])
+  nodeId         String
+  nodeOptionId   String?
+  responseText   String
+  score          Int?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model whatsapp_sessions {

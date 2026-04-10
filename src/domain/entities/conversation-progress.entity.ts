@@ -3,8 +3,7 @@ import { UUID } from './vos';
 type ConversationProgressEntityProps = {
   id?: string | UUID | null;
   conversationId: string | UUID;
-  currentStageId: string;
-  currentStageContentId: string;
+  currentNodeId: string;
   waitingForResponse?: boolean | null;
   waitingForResponseSince?: Date | null;
   followUpSentAt?: Date | null;
@@ -15,8 +14,7 @@ type ConversationProgressEntityProps = {
 export class ConversationProgressEntity {
   id: UUID;
   conversationId: UUID;
-  currentStageId: string;
-  currentStageContentId: string;
+  currentNodeId: string;
   waitingForResponse: boolean;
   waitingForResponseSince: Date | null;
   followUpSentAt: Date | null;
@@ -38,8 +36,7 @@ export class ConversationProgressEntity {
       this.conversationId = UUID.from(props.conversationId);
     }
 
-    this.currentStageId = props.currentStageId;
-    this.currentStageContentId = props.currentStageContentId;
+    this.currentNodeId = props.currentNodeId;
     this.waitingForResponse = props.waitingForResponse ?? false;
     this.waitingForResponseSince = props.waitingForResponseSince ?? null;
     this.followUpSentAt = props.followUpSentAt ?? null;
@@ -53,9 +50,8 @@ export class ConversationProgressEntity {
     this.updatedAt = new Date();
   }
 
-  advanceTo(stageId: string, stageContentId: string) {
-    this.currentStageId = stageId;
-    this.currentStageContentId = stageContentId;
+  advanceTo(nodeId: string) {
+    this.currentNodeId = nodeId;
     this.waitingForResponse = false;
     this.waitingForResponseSince = null;
     this.followUpSentAt = null;
