@@ -1,4 +1,4 @@
-app = 'bot-api'
+app = 'bot-api-test'
 primary_region = 'gru'
 
 [build]
