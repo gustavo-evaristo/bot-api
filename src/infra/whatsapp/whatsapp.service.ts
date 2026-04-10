@@ -16,6 +16,7 @@ const RECONNECT_BATCH_SIZE = 10;
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
   private sessions = new Map<string, WASocket>();
+  private pendingSessions = new Set<string>();
   private stores = new Map<string, any>();
 
   constructor(
@@ -44,37 +45,54 @@ export class WhatsappService implements OnModuleInit {
   }
 
   async startSession(userId: string): Promise<void> {
-    if (this.sessions.has(userId)) {
+    if (this.sessions.has(userId) || this.pendingSessions.has(userId)) {
       return;
     }
 
-    const { makeWASocket, DisconnectReason, fetchLatestBaileysVersion } = await loadBaileys();
-    const { state, saveCreds } = await useWhatsAppAuthState(userId, this.sessionRepository);
-    const { version } = await fetchLatestBaileysVersion();
+    this.pendingSessions.add(userId);
 
-    // Maps LID JID → phone JID (e.g. "258063227420919@lid" → "5511970256279@s.whatsapp.net")
-    const lidToPhone = new Map<string, string>();
-    this.stores.set(userId, lidToPhone);
+    let DisconnectReason: any;
+    let saveCreds: () => Promise<void>;
+    let lidToPhone: Map<string, string>;
+    let sock: WASocket;
 
-    const noopLogger = {
-      level: 'silent',
-      trace: () => {},
-      debug: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-      fatal: () => {},
-      child: () => noopLogger,
-    };
+    try {
+      const baileys = await loadBaileys();
+      DisconnectReason = baileys.DisconnectReason;
 
-    const sock = makeWASocket({
-      version,
-      auth: state,
-      printQRInTerminal: false,
-      logger: noopLogger as any,
-    });
+      const authState = await useWhatsAppAuthState(userId, this.sessionRepository);
+      saveCreds = authState.saveCreds;
 
-    this.sessions.set(userId, sock);
+      const { version } = await baileys.fetchLatestBaileysVersion();
+
+      lidToPhone = new Map<string, string>();
+      this.stores.set(userId, lidToPhone);
+
+      const noopLogger = {
+        level: 'silent',
+        trace: () => {},
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        fatal: () => {},
+        child: () => noopLogger,
+      };
+
+      sock = baileys.makeWASocket({
+        version,
+        auth: authState.state,
+        printQRInTerminal: false,
+        logger: noopLogger as any,
+      });
+
+      this.sessions.set(userId, sock);
+    } catch (err) {
+      this.pendingSessions.delete(userId);
+      throw err;
+    }
+
+    this.pendingSessions.delete(userId);
 
     sock.ev.on('creds.update', saveCreds);
 
@@ -112,10 +130,15 @@ export class WhatsappService implements OnModuleInit {
           await this.sessionRepository.delete(userId);
           this.stores.delete(userId);
         } else {
-          this.logger.log(`Conexão encerrada para ${userId} (código ${statusCode}). Reconectando...`);
-          await this.startSession(userId).catch((err) =>
-            this.logger.error(`Erro ao reconectar ${userId}:`, err),
-          );
+          // Código 440 = Connection Replaced (outra instância tomou a sessão).
+          // Aguarda antes de reconectar para evitar loop de kick mútuo.
+          const delay = statusCode === DisconnectReason.connectionReplaced ? 10_000 : 2_000;
+          this.logger.log(`Conexão encerrada para ${userId} (código ${statusCode}). Reconectando em ${delay / 1000}s...`);
+          setTimeout(() => {
+            this.startSession(userId).catch((err) =>
+              this.logger.error(`Erro ao reconectar ${userId}:`, err),
+            );
+          }, delay);
         }
       }
     });
