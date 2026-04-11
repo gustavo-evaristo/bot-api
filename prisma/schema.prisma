@@ -32,6 +32,7 @@ model flows {
   isActive    Boolean         @default(true)
   isDeleted   Boolean         @default(false)
   title       String
+  description String?
   phoneNumber String?
   startNodeId String?
   createdAt   DateTime        @default(now())

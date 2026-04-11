@@ -7,7 +7,6 @@ import {
   CreateFlowUseCase,
   DeleteFlowUseCase,
   DesactiveFlowUseCase,
-  DuplicateFlowUseCase,
   GetFlowUseCase,
   ListFlowsUseCase,
   SetFlowStartNodeUseCase,
@@ -17,7 +16,6 @@ import {
 import { CreateFlowController } from './create-flow.controller';
 import { DatabaseModule } from 'src/infra/database/database.module';
 import { AuthenticationModule } from 'src/infra/authentication/authentication.module';
-import { DuplicateFlowController } from './duplicate-flow.controller';
 import { ActiveFlowController } from './active-flow.controller';
 import { DesactiveFlowController } from './desactive-flow.controller';
 import { UpdateFlowPhoneNumberController } from './update-flow-phone-number.controller';
@@ -30,7 +28,6 @@ import { DeleteFlowController } from './delete-flow.controller';
     ListFlowsUseCase,
     GetFlowUseCase,
     CreateFlowUseCase,
-    DuplicateFlowUseCase,
     ActiveFlowUseCase,
     DesactiveFlowUseCase,
     UpdateFlowPhoneNumberUseCase,
@@ -42,7 +39,6 @@ import { DeleteFlowController } from './delete-flow.controller';
     ListFlowsController,
     GetFlowController,
     UpdateFlowController,
-    DuplicateFlowController,
     ActiveFlowController,
     DesactiveFlowController,
     UpdateFlowPhoneNumberController,

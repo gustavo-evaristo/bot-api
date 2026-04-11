@@ -23,13 +23,14 @@ export class UpdateFlowController {
   @UseGuards(JwtGuard)
   @Put()
   async updateFlow(
-    @Body() { id, title }: UpdateFlowDTO,
+    @Body() { id, title, description }: UpdateFlowDTO,
     @Req() { user }: IReq,
   ) {
     await this.updateFlowUseCase.execute({
       id,
       userId: user.id,
       title,
+      description,
     });
 
     return { status: 'ok' };

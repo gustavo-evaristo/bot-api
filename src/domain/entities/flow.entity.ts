@@ -6,6 +6,7 @@ interface FlowEntityProps {
   isDeleted?: boolean | null;
   userId: string | UUID;
   title: string;
+  description?: string | null;
   phoneNumber?: string | null;
   startNodeId?: string | null;
   createdAt?: Date | null;
@@ -14,6 +15,7 @@ interface FlowEntityProps {
 
 interface UpdateFlowEntityProps {
   title: string;
+  description?: string | null;
 }
 
 export interface NodeOptionDetail {
@@ -48,6 +50,7 @@ export class FlowEntity {
   isActive: boolean;
   isDeleted: boolean;
   title: string;
+  description: string | null;
   phoneNumber: string | null;
   startNodeId: string | null;
   createdAt: Date;
@@ -71,6 +74,7 @@ export class FlowEntity {
     this.isActive = props.isActive ?? false;
     this.isDeleted = props.isDeleted ?? false;
     this.title = props.title;
+    this.description = props.description ?? null;
     this.phoneNumber = props.phoneNumber ?? null;
     this.startNodeId = props.startNodeId ?? null;
 
@@ -106,8 +110,9 @@ export class FlowEntity {
     return this.userId.equals(userId);
   }
 
-  update({ title }: UpdateFlowEntityProps) {
+  update({ title, description }: UpdateFlowEntityProps) {
     this.title = title;
+    this.description = description ?? null;
     this.touch();
   }
 

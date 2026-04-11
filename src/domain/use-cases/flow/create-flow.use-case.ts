@@ -5,6 +5,7 @@ import { IFlowRepository, IUserRepository } from 'src/domain/repositories';
 interface Input {
   userId: string;
   title: string;
+  description?: string | null;
 }
 
 @Injectable()
@@ -14,7 +15,7 @@ export class CreateFlowUseCase {
     private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute({ title, userId }: Input): Promise<FlowEntity> {
+  async execute({ title, description, userId }: Input): Promise<FlowEntity> {
     const user = await this.userRepository.get(userId);
 
     if (!user) {
@@ -24,6 +25,7 @@ export class CreateFlowUseCase {
     const flow = new FlowEntity({
       userId,
       title,
+      description,
     });
 
     await this.flowRepository.create(flow);

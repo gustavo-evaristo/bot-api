@@ -3,7 +3,6 @@ export * from './flow/create-flow.use-case';
 export * from './flow/update-flow-phone-number.use-case';
 export * from './flow/update-flow.use-case';
 export * from './flow/delete-flow.use-case';
-export * from './flow/duplicate-flow.use-case';
 export * from './flow/desactive-flow.use-case';
 export * from './flow/list-flows.use-case';
 export * from './flow/get-flow.use-case';

@@ -26,6 +26,7 @@ export class ListFlowsController {
       id: flow.id.toString(),
       isActive: flow.isActive,
       title: flow.title,
+      description: flow.description,
       phoneNumber: flow.phoneNumber,
       createdAt: flow.createdAt,
     }));

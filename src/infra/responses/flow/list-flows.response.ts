@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { randomUUID } from 'crypto';
 
 export abstract class ListFlowsResponse {
@@ -10,6 +10,9 @@ export abstract class ListFlowsResponse {
 
   @ApiProperty({ example: 'Meu flow' })
   title: string;
+
+  @ApiPropertyOptional({ example: 'Fluxo de atendimento inicial ao lead' })
+  description: string | null;
 
   @ApiProperty({ example: '+5511999999999' })
   phoneNumber: string;
