@@ -216,7 +216,16 @@ export class ProcessMessageUseCase {
     while (true) {
       const currentNode = nodeMap.get(progress.currentNodeId);
 
-      if (!currentNode || currentNode.type === NodeType.END) {
+      if (!currentNode) {
+        conversation.finish();
+        await this.conversationRepository.update(conversation);
+        break;
+      }
+
+      if (currentNode.type === NodeType.END) {
+        if (currentNode.content?.trim()) {
+          messagesToSend.push(currentNode.content);
+        }
         conversation.finish();
         await this.conversationRepository.update(conversation);
         break;
