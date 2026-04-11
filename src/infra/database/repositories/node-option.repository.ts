@@ -30,9 +30,9 @@ export class NodeOptionRepository implements INodeOptionRepository {
     });
   }
 
-  async deleteByKanbanId(kanbanId: string): Promise<void> {
+  async deleteByFlowId(flowId: string): Promise<void> {
     await this.prismaService.node_options.updateMany({
-      where: { node: { kanbanId } },
+      where: { node: { flowId } },
       data: { isDeleted: true },
     });
   }

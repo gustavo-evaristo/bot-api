@@ -26,10 +26,10 @@ export class ConversationSummaryResponse {
   status: string;
 
   @ApiProperty({ example: randomUUID() })
-  kanbanId: string;
+  flowId: string;
 
   @ApiProperty({ example: 'Fluxo de cadastro de consultoras' })
-  kanbanTitle: string;
+  flowTitle: string;
 
   @ApiProperty({ type: LastMessageResponse, nullable: true })
   lastMessage: LastMessageResponse | null;

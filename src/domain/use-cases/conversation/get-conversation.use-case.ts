@@ -17,7 +17,7 @@ export interface GetConversationOutput {
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
-  kanbanTitle: string;
+  flowTitle: string;
   messages: {
     id: string;
     sender: string;
@@ -44,12 +44,12 @@ export class GetConversationUseCase {
 
     if (!conversation) throw new NotFoundException('Conversa não encontrada.');
 
-    if (conversation.kanbanUserId !== userId)
+    if (conversation.flowUserId !== userId)
       throw new ForbiddenException('Acesso negado.');
 
     const allConversationIds =
       await this.conversationRepository.findIdsByLeadAndKanban(
-        conversation.kanbanId,
+        conversation.flowId,
         conversation.leadPhoneNumber,
       );
 
@@ -63,7 +63,7 @@ export class GetConversationUseCase {
       leadPhoneNumber: conversation.leadPhoneNumber,
       leadName: conversation.leadName,
       status: conversation.status,
-      kanbanTitle: conversation.kanbanTitle,
+      flowTitle: conversation.flowTitle,
       messages: messages.map((m: MessageHistoryEntity) => ({
         id: m.id.toString(),
         sender: m.sender,

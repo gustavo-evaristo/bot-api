@@ -4,10 +4,10 @@ import { IUserRepository } from 'src/domain/repositories/user.repository';
 import { PrismaService } from './prisma.service';
 import {
   IFlowNodeRepository,
-  IKanbanRepository,
+  IFlowRepository,
   INodeOptionRepository,
 } from 'src/domain/repositories';
-import { KanbanRepository } from './repositories/kanban.repository';
+import { FlowRepository } from './repositories/flow.repository';
 import { FlowNodeRepository } from './repositories/flow-node.repository';
 import { NodeOptionRepository } from './repositories/node-option.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
@@ -31,8 +31,8 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
       useClass: UserRepository,
     },
     {
-      provide: IKanbanRepository,
-      useClass: KanbanRepository,
+      provide: IFlowRepository,
+      useClass: FlowRepository,
     },
     {
       provide: IFlowNodeRepository,
@@ -70,7 +70,7 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
   exports: [
     PrismaService,
     IUserRepository,
-    IKanbanRepository,
+    IFlowRepository,
     IFlowNodeRepository,
     INodeOptionRepository,
     IConversationRepository,

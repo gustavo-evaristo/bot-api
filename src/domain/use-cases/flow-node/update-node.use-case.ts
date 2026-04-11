@@ -3,7 +3,7 @@ import { FlowNodeEntity, NodeType } from 'src/domain/entities/flow-node.entity';
 import { NodeOptionEntity } from 'src/domain/entities/node-option.entity';
 import { IFlowNodeRepository } from 'src/domain/repositories/flow-node.repository';
 import { INodeOptionRepository } from 'src/domain/repositories/node-option.repository';
-import { IKanbanRepository, IUserRepository } from 'src/domain/repositories';
+import { IFlowRepository, IUserRepository } from 'src/domain/repositories';
 
 interface NodeOptionInput {
   content: string;
@@ -27,7 +27,7 @@ interface Input {
 export class UpdateNodeUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
-    private readonly kanbanRepository: IKanbanRepository,
+    private readonly flowRepository: IFlowRepository,
     private readonly flowNodeRepository: IFlowNodeRepository,
     private readonly nodeOptionRepository: INodeOptionRepository,
   ) {}
@@ -48,11 +48,11 @@ export class UpdateNodeUseCase {
     const node = await this.flowNodeRepository.get(nodeId);
     if (!node) throw new Error('Node not found');
 
-    const kanban = await this.kanbanRepository.get(node.kanbanId.toString());
-    if (!kanban) throw new Error('Kanban not found');
+    const flow = await this.flowRepository.get(node.flowId.toString());
+    if (!flow) throw new Error('Flow not found');
 
-    if (!kanban.belongsTo(user.id)) {
-      throw new Error('User does not own this kanban');
+    if (!flow.belongsTo(user.id)) {
+      throw new Error('User does not own this flow');
     }
 
     node.update({ type, content, defaultNextNodeId, x, y });

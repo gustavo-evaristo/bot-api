@@ -30,8 +30,8 @@ export class AnalyticsRepository implements IAnalyticsRepository {
       SELECT
         COUNT(DISTINCT c.id)::bigint AS "totalLeads",
         COUNT(mh.id) FILTER (WHERE mh.sender = 'BOT')::bigint AS "totalInteractions"
-      FROM kanbans k
-      JOIN conversations c ON c."kanbanId" = k.id
+      FROM flows k
+      JOIN conversations c ON c."flowId" = k.id
       LEFT JOIN message_history mh ON mh."conversationId" = c.id
       WHERE k."userId" = ${userId}
         AND k."isDeleted" = false
@@ -43,8 +43,8 @@ export class AnalyticsRepository implements IAnalyticsRepository {
       SELECT
         EXTRACT(ISODOW FROM c."createdAt")::int AS dow,
         COUNT(*)::bigint AS count
-      FROM kanbans k
-      JOIN conversations c ON c."kanbanId" = k.id
+      FROM flows k
+      JOIN conversations c ON c."flowId" = k.id
       WHERE k."userId" = ${userId}
         AND k."isDeleted" = false
         AND c."createdAt" >= ${weekStart}

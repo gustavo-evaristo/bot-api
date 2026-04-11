@@ -29,7 +29,7 @@ export class GetConversationResponse {
   status: string;
 
   @ApiProperty({ example: 'Fluxo de cadastro de consultoras' })
-  kanbanTitle: string;
+  flowTitle: string;
 
   @ApiProperty({ type: MessageResponse, isArray: true })
   messages: MessageResponse[];

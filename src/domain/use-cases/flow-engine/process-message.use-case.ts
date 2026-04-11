@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { isAfter, subHours } from 'date-fns';
-import { IKanbanRepository } from 'src/domain/repositories/kanban.repository';
+import { IFlowRepository } from 'src/domain/repositories/flow.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
 import { ILeadResponseRepository } from 'src/domain/repositories/lead-response.repository';
@@ -8,7 +8,7 @@ import { ConversationEntity } from 'src/domain/entities/conversation.entity';
 import { ConversationProgressEntity } from 'src/domain/entities/conversation-progress.entity';
 import { LeadResponseEntity } from 'src/domain/entities/lead-response.entity';
 import { NodeType } from 'src/domain/entities/flow-node.entity';
-import { KanbanDetails, FlowNodeDetail } from 'src/domain/entities/kanban.entity';
+import { FlowDetails, FlowNodeDetail } from 'src/domain/entities/flow.entity';
 
 interface Input {
   botPhoneNumber: string;
@@ -26,7 +26,7 @@ interface Output {
 @Injectable()
 export class ProcessMessageUseCase {
   constructor(
-    private readonly kanbanRepository: IKanbanRepository,
+    private readonly kanbanRepository: IFlowRepository,
     private readonly conversationRepository: IConversationRepository,
     private readonly conversationProgressRepository: IConversationProgressRepository,
     private readonly leadResponseRepository: ILeadResponseRepository,
@@ -91,7 +91,7 @@ export class ProcessMessageUseCase {
       }
 
       conversation = new ConversationEntity({
-        kanbanId: kanban.id,
+        flowId: kanban.id,
         leadPhoneNumber,
         leadName: leadName ?? null,
       });
@@ -263,7 +263,7 @@ export class ProcessMessageUseCase {
   }
 
   private buildNodeMap(
-    details: KanbanDetails,
+    details: FlowDetails,
   ): Map<string, FlowNodeDetail> {
     return new Map(details.nodes.map((n) => [n.id, n]));
   }

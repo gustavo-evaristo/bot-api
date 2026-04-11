@@ -14,10 +14,10 @@ export class LeadItemResponse {
   status: string;
 
   @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' })
-  kanbanId: string;
+  flowId: string;
 
   @ApiProperty({ example: 'Fluxo de cadastro' })
-  kanbanTitle: string;
+  flowTitle: string;
 
   @ApiProperty({ example: new Date().toISOString() })
   createdAt: Date;

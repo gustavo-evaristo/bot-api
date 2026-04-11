@@ -33,7 +33,7 @@ export class SendMessageUseCase {
       throw new Error('Conversa não encontrada.');
     }
 
-    if (conversation.kanbanUserId !== userId) {
+    if (conversation.flowUserId !== userId) {
       throw new Error('Acesso negado.');
     }
 

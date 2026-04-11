@@ -7,7 +7,7 @@ export enum ConversationStatus {
 
 type ConversationEntityProps = {
   id?: string | UUID | null;
-  kanbanId: string | UUID;
+  flowId: string | UUID;
   leadPhoneNumber: string;
   leadName?: string | null;
   status?: ConversationStatus | string | null;
@@ -17,7 +17,7 @@ type ConversationEntityProps = {
 
 export class ConversationEntity {
   id: UUID;
-  kanbanId: UUID;
+  flowId: UUID;
   leadPhoneNumber: string;
   leadName: string | null;
   status: ConversationStatus;
@@ -33,10 +33,10 @@ export class ConversationEntity {
       this.id = UUID.generate();
     }
 
-    if (props.kanbanId instanceof UUID) {
-      this.kanbanId = props.kanbanId;
+    if (props.flowId instanceof UUID) {
+      this.flowId = props.flowId;
     } else {
-      this.kanbanId = UUID.from(props.kanbanId);
+      this.flowId = UUID.from(props.flowId);
     }
 
     this.leadPhoneNumber = props.leadPhoneNumber;

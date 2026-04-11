@@ -286,7 +286,7 @@ export class WhatsappService {
 
     if (!resolvedUserId) {
       this.logger.warn(
-        `Nenhum kanban ativo para o número ${botPhoneNumber}. Mensagem de ${leadPhoneNumber} ignorada.`,
+        `Nenhum flow ativo para o número ${botPhoneNumber}. Mensagem de ${leadPhoneNumber} ignorada.`,
       );
       return;
     }

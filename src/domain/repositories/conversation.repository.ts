@@ -5,8 +5,8 @@ export interface ConversationSummary {
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
-  kanbanId: string;
-  kanbanTitle: string;
+  flowId: string;
+  flowTitle: string;
   lastMessage: { content: string; sender: string; sentAt: Date } | null;
   createdAt: Date;
   updatedAt: Date;
@@ -17,19 +17,19 @@ export interface LeadSummary {
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
-  kanbanId: string;
-  kanbanTitle: string;
+  flowId: string;
+  flowTitle: string;
   createdAt: Date;
 }
 
 export interface ConversationDetail {
   id: string;
-  kanbanId: string;
+  flowId: string;
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
-  kanbanTitle: string;
-  kanbanUserId: string;
+  flowTitle: string;
+  flowUserId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,19 +37,19 @@ export interface ConversationDetail {
 export abstract class IConversationRepository {
   abstract create(conversation: ConversationEntity): Promise<void>;
   abstract findActive(
-    kanbanId: string,
+    flowId: string,
     leadPhoneNumber: string,
   ): Promise<ConversationEntity | null>;
   abstract update(conversation: ConversationEntity): Promise<void>;
   abstract findManyByUserId(userId: string): Promise<ConversationSummary[]>;
   abstract findById(id: string): Promise<ConversationDetail | null>;
   abstract findIdsByLeadAndKanban(
-    kanbanId: string,
+    flowId: string,
     leadPhoneNumber: string,
   ): Promise<string[]>;
   abstract findLeadsByUserId(userId: string): Promise<LeadSummary[]>;
   abstract findLastFinished(
-    kanbanId: string,
+    flowId: string,
     leadPhoneNumber: string,
   ): Promise<ConversationEntity | null>;
 }

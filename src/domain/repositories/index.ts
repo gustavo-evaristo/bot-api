@@ -1,4 +1,4 @@
-export * from './kanban.repository';
+export * from './flow.repository';
 export * from './user.repository';
 export * from './flow-node.repository';
 export * from './node-option.repository';

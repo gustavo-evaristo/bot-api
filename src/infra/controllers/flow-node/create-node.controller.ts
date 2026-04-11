@@ -17,7 +17,7 @@ export class CreateNodeController {
   async handle(@Body() body: CreateNodeDto, @Req() { user }: IReq) {
     const node = await this.createNodeUseCase.execute({
       userId: user.id,
-      kanbanId: body.kanbanId,
+      flowId: body.flowId,
       type: body.type,
       content: body.content,
       defaultNextNodeId: body.defaultNextNodeId,

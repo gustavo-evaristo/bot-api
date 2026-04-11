@@ -5,6 +5,6 @@ export abstract class IFlowNodeRepository {
   abstract create(node: FlowNodeEntity): Promise<void>;
   abstract save(node: FlowNodeEntity): Promise<void>;
   abstract createMany(nodes: FlowNodeEntity[]): Promise<void>;
-  abstract deleteByKanbanId(kanbanId: string): Promise<void>;
+  abstract deleteByFlowId(flowId: string): Promise<void>;
   abstract clearNextNodeReferences(deletedNodeId: string): Promise<void>;
 }

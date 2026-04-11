@@ -9,7 +9,7 @@ export enum NodeType {
 
 type FlowNodeEntityProps = {
   id?: string | UUID | null;
-  kanbanId: string | UUID;
+  flowId: string | UUID;
   isDeleted?: boolean | null;
   type: NodeType;
   content: string;
@@ -22,7 +22,7 @@ type FlowNodeEntityProps = {
 
 export class FlowNodeEntity {
   id: UUID;
-  kanbanId: UUID;
+  flowId: UUID;
   isDeleted: boolean;
   type: NodeType;
   content: string;
@@ -41,10 +41,10 @@ export class FlowNodeEntity {
       this.id = UUID.generate();
     }
 
-    if (props.kanbanId instanceof UUID) {
-      this.kanbanId = props.kanbanId;
+    if (props.flowId instanceof UUID) {
+      this.flowId = props.flowId;
     } else {
-      this.kanbanId = UUID.from(props.kanbanId);
+      this.flowId = UUID.from(props.flowId);
     }
 
     this.isDeleted = props.isDeleted ?? false;

@@ -18,7 +18,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
     return new FlowNodeEntity({
       ...node,
       id: UUID.from(node.id),
-      kanbanId: UUID.from(node.kanbanId),
+      flowId: UUID.from(node.flowId),
       type: node.type as NodeType,
     });
   }
@@ -27,7 +27,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
     await this.prismaService.flow_nodes.create({
       data: {
         id: node.id.toString(),
-        kanbanId: node.kanbanId.toString(),
+        flowId: node.flowId.toString(),
         isDeleted: node.isDeleted,
         type: node.type,
         content: node.content,
@@ -59,7 +59,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
     await this.prismaService.flow_nodes.createMany({
       data: nodes.map((node) => ({
         id: node.id.toString(),
-        kanbanId: node.kanbanId.toString(),
+        flowId: node.flowId.toString(),
         isDeleted: node.isDeleted,
         type: node.type,
         content: node.content,
@@ -72,9 +72,9 @@ export class FlowNodeRepository implements IFlowNodeRepository {
     });
   }
 
-  async deleteByKanbanId(kanbanId: string): Promise<void> {
+  async deleteByFlowId(flowId: string): Promise<void> {
     await this.prismaService.flow_nodes.updateMany({
-      where: { kanbanId },
+      where: { flowId },
       data: { isDeleted: true },
     });
   }

@@ -35,9 +35,9 @@ export class NodeOptionDto {
 }
 
 export class CreateNodeDto {
-  @ApiProperty({ example: 'uuid-do-kanban' })
+  @ApiProperty({ example: 'uuid-do-flow' })
   @IsUUID()
-  kanbanId: string;
+  flowId: string;
 
   @ApiProperty({ enum: NodeType, example: NodeType.TEXT })
   @IsEnum(NodeType)

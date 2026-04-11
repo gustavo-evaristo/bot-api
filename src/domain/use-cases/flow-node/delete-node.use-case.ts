@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IFlowNodeRepository } from 'src/domain/repositories/flow-node.repository';
 import { INodeOptionRepository } from 'src/domain/repositories/node-option.repository';
-import { IKanbanRepository, IUserRepository } from 'src/domain/repositories';
+import { IFlowRepository, IUserRepository } from 'src/domain/repositories';
 
 interface Input {
   userId: string;
@@ -12,7 +12,7 @@ interface Input {
 export class DeleteNodeUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
-    private readonly kanbanRepository: IKanbanRepository,
+    private readonly flowRepository: IFlowRepository,
     private readonly flowNodeRepository: IFlowNodeRepository,
     private readonly nodeOptionRepository: INodeOptionRepository,
   ) {}
@@ -24,11 +24,11 @@ export class DeleteNodeUseCase {
     const node = await this.flowNodeRepository.get(nodeId);
     if (!node) throw new Error('Node not found');
 
-    const kanban = await this.kanbanRepository.get(node.kanbanId.toString());
-    if (!kanban) throw new Error('Kanban not found');
+    const flow = await this.flowRepository.get(node.flowId.toString());
+    if (!flow) throw new Error('Flow not found');
 
-    if (!kanban.belongsTo(user.id)) {
-      throw new Error('User does not own this kanban');
+    if (!flow.belongsTo(user.id)) {
+      throw new Error('User does not own this flow');
     }
 
     // Soft delete opções e referências ao nó deletado
@@ -36,10 +36,10 @@ export class DeleteNodeUseCase {
     await this.flowNodeRepository.clearNextNodeReferences(nodeId);
     await this.nodeOptionRepository.clearNextNodeReferences(nodeId);
 
-    // Se era o startNode do kanban, limpar referência
-    if (kanban.startNodeId === nodeId) {
-      kanban.updateStartNode(null);
-      await this.kanbanRepository.update(kanban);
+    // Se era o startNode do flow, limpar referência
+    if (flow.startNodeId === nodeId) {
+      flow.updateStartNode(null);
+      await this.flowRepository.update(flow);
     }
 
     node.delete();

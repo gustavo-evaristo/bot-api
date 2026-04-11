@@ -67,13 +67,13 @@ export class ConversationProgressRepository implements IConversationProgressRepo
         followUpSentAt: null,
         waitingForResponseSince: { lt: threshold },
         conversation: {
-          kanban: { isActive: true, isDeleted: false },
+          flow: { isActive: true, isDeleted: false },
         },
       },
       include: {
         conversation: {
           include: {
-            kanban: true,
+            flow: true,
           },
         },
       },
@@ -82,7 +82,7 @@ export class ConversationProgressRepository implements IConversationProgressRepo
     return records.map((record) => ({
       conversationId: record.conversationId,
       leadPhoneNumber: record.conversation.leadPhoneNumber,
-      userId: record.conversation.kanban.userId,
+      userId: record.conversation.flow.userId,
       progress: new ConversationProgressEntity({
         ...record,
         id: UUID.from(record.id),

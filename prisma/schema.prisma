@@ -14,38 +14,36 @@ datasource db {
 }
 
 model users {
-  id        String    @id @default(uuid())
-  isActive  Boolean   @default(true)
+  id        String   @id @default(uuid())
+  isActive  Boolean  @default(true)
   name      String
-  email     String    @unique
-  phone     String    @unique
+  email     String   @unique
+  phone     String   @unique
   password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  kanbans   kanbans[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  flows     flows[]
 }
 
-model kanbans {
-  id          String       @id @default(uuid())
+model flows {
+  id          String          @id @default(uuid())
   userId      String
-  user        users        @relation(fields: [userId], references: [id])
-  isActive    Boolean      @default(true)
-  isDeleted   Boolean      @default(false)
+  user        users           @relation(fields: [userId], references: [id])
+  isActive    Boolean         @default(true)
+  isDeleted   Boolean         @default(false)
   title       String
-  description String
-  imageUrl    String?
   phoneNumber String?
   startNodeId String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   nodes         flow_nodes[]
   conversations conversations[]
 }
 
 model flow_nodes {
   id                String         @id @default(uuid())
-  kanbanId          String
-  kanban            kanbans        @relation(fields: [kanbanId], references: [id])
+  flowId            String
+  flow              flows          @relation(fields: [flowId], references: [id])
   isDeleted         Boolean        @default(false)
   type              String
   content           String
@@ -76,8 +74,8 @@ model node_options {
 
 model conversations {
   id              String                  @id @default(uuid())
-  kanbanId        String
-  kanban          kanbans                 @relation(fields: [kanbanId], references: [id])
+  flowId          String
+  flow            flows                   @relation(fields: [flowId], references: [id])
   leadPhoneNumber String
   leadName        String?
   status          String                  @default("ACTIVE")

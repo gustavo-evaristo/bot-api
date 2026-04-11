@@ -20,7 +20,7 @@ export class ConversationRepository implements IConversationRepository {
     await this.prismaService.conversations.create({
       data: {
         id: conversation.id.toString(),
-        kanbanId: conversation.kanbanId.toString(),
+        flowId: conversation.flowId.toString(),
         leadPhoneNumber: conversation.leadPhoneNumber,
         leadName: conversation.leadName,
         status: conversation.status,
@@ -31,12 +31,12 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   async findActive(
-    kanbanId: string,
+    flowId: string,
     leadPhoneNumber: string,
   ): Promise<ConversationEntity | null> {
     const conversation = await this.prismaService.conversations.findFirst({
       where: {
-        kanbanId,
+        flowId,
         leadPhoneNumber,
         status: ConversationStatus.ACTIVE,
       },
@@ -47,7 +47,7 @@ export class ConversationRepository implements IConversationRepository {
     return new ConversationEntity({
       ...conversation,
       id: UUID.from(conversation.id),
-      kanbanId: UUID.from(conversation.kanbanId),
+      flowId: UUID.from(conversation.flowId),
     });
   }
 
@@ -67,8 +67,8 @@ export class ConversationRepository implements IConversationRepository {
       leadPhoneNumber: string;
       leadName: string | null;
       status: string;
-      kanbanId: string;
-      kanbanTitle: string;
+      flowId: string;
+      flowTitle: string;
       lastMessageContent: string | null;
       lastMessageSender: string | null;
       lastMessageSentAt: Date | null;
@@ -78,20 +78,20 @@ export class ConversationRepository implements IConversationRepository {
 
     const rows = await this.prismaService.$queryRaw<Row[]>`
       SELECT * FROM (
-        SELECT DISTINCT ON (c."leadPhoneNumber", c."kanbanId")
+        SELECT DISTINCT ON (c."leadPhoneNumber", c."flowId")
           c.id,
           c."leadPhoneNumber",
           c."leadName",
           c.status,
-          k.id           AS "kanbanId",
-          k.title        AS "kanbanTitle",
+          k.id           AS "flowId",
+          k.title        AS "flowTitle",
           mh.content     AS "lastMessageContent",
           mh.sender      AS "lastMessageSender",
           mh."createdAt" AS "lastMessageSentAt",
           c."createdAt",
           c."updatedAt"
         FROM conversations c
-        JOIN kanbans k ON k.id = c."kanbanId"
+        JOIN flows k ON k.id = c."flowId"
         LEFT JOIN LATERAL (
           SELECT content, sender, "createdAt"
           FROM message_history
@@ -101,7 +101,7 @@ export class ConversationRepository implements IConversationRepository {
         ) mh ON true
         WHERE k."userId" = ${userId}
           AND k."isDeleted" = false
-        ORDER BY c."leadPhoneNumber", c."kanbanId", c."updatedAt" DESC
+        ORDER BY c."leadPhoneNumber", c."flowId", c."updatedAt" DESC
       ) latest
       ORDER BY COALESCE(latest."lastMessageSentAt", latest."updatedAt") DESC
     `;
@@ -111,8 +111,8 @@ export class ConversationRepository implements IConversationRepository {
       leadPhoneNumber: r.leadPhoneNumber,
       leadName: r.leadName,
       status: r.status,
-      kanbanId: r.kanbanId,
-      kanbanTitle: r.kanbanTitle,
+      flowId: r.flowId,
+      flowTitle: r.flowTitle,
       lastMessage:
         r.lastMessageContent !== null &&
         r.lastMessageSender !== null &&
@@ -132,7 +132,7 @@ export class ConversationRepository implements IConversationRepository {
     const r = await this.prismaService.conversations.findUnique({
       where: { id },
       include: {
-        kanban: { select: { title: true, userId: true } },
+        flow: { select: { title: true, userId: true } },
       },
     });
 
@@ -140,12 +140,12 @@ export class ConversationRepository implements IConversationRepository {
 
     return {
       id: r.id,
-      kanbanId: r.kanbanId,
+      flowId: r.flowId,
       leadPhoneNumber: r.leadPhoneNumber,
       leadName: r.leadName,
       status: r.status,
-      kanbanTitle: r.kanban.title,
-      kanbanUserId: r.kanban.userId,
+      flowTitle: r.flow.title,
+      flowUserId: r.flow.userId,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     };
@@ -157,26 +157,26 @@ export class ConversationRepository implements IConversationRepository {
       leadPhoneNumber: string;
       leadName: string | null;
       status: string;
-      kanbanId: string;
-      kanbanTitle: string;
+      flowId: string;
+      flowTitle: string;
       createdAt: Date;
     };
 
     const rows = await this.prismaService.$queryRaw<Row[]>`
       SELECT * FROM (
-        SELECT DISTINCT ON (c."leadPhoneNumber", c."kanbanId")
+        SELECT DISTINCT ON (c."leadPhoneNumber", c."flowId")
           c.id,
           c."leadPhoneNumber",
           c."leadName",
           c.status,
-          k.id    AS "kanbanId",
-          k.title AS "kanbanTitle",
+          k.id    AS "flowId",
+          k.title AS "flowTitle",
           c."createdAt"
         FROM conversations c
-        JOIN kanbans k ON k.id = c."kanbanId"
+        JOIN flows k ON k.id = c."flowId"
         WHERE k."userId" = ${userId}
           AND k."isDeleted" = false
-        ORDER BY c."leadPhoneNumber", c."kanbanId", c."updatedAt" DESC
+        ORDER BY c."leadPhoneNumber", c."flowId", c."updatedAt" DESC
       ) leads
       ORDER BY leads."createdAt" DESC
     `;
@@ -185,11 +185,11 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   async findLastFinished(
-    kanbanId: string,
+    flowId: string,
     leadPhoneNumber: string,
   ): Promise<ConversationEntity | null> {
     const r = await this.prismaService.conversations.findFirst({
-      where: { kanbanId, leadPhoneNumber, status: ConversationStatus.FINISHED },
+      where: { flowId, leadPhoneNumber, status: ConversationStatus.FINISHED },
       orderBy: { updatedAt: 'desc' },
     });
 
@@ -198,16 +198,16 @@ export class ConversationRepository implements IConversationRepository {
     return new ConversationEntity({
       ...r,
       id: UUID.from(r.id),
-      kanbanId: UUID.from(r.kanbanId),
+      flowId: UUID.from(r.flowId),
     });
   }
 
   async findIdsByLeadAndKanban(
-    kanbanId: string,
+    flowId: string,
     leadPhoneNumber: string,
   ): Promise<string[]> {
     const records = await this.prismaService.conversations.findMany({
-      where: { kanbanId, leadPhoneNumber },
+      where: { flowId, leadPhoneNumber },
       select: { id: true },
     });
 
