@@ -5,6 +5,7 @@ import { UserModule } from './controllers/user/user.module';
 import { FlowNodeModule } from './controllers/flow-node/flow-node.module';
 import { ConversationModule } from './controllers/conversation/conversation.module';
 import { AnalyticsModule } from './controllers/analytics/analytics.module';
+import { FormModule } from './controllers/form/form.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AnalyticsModule } from './controllers/analytics/analytics.module';
     FlowNodeModule,
     ConversationModule,
     AnalyticsModule,
+    FormModule,
   ],
 })
 export class InfraModule {}
