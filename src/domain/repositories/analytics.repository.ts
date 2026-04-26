@@ -1,13 +1,19 @@
 export interface AnalyticsResult {
+  messagesReceivedToday: number;
+  newLeadsToday: number;
   totalLeads: number;
   totalInteractions: number;
-  leadsByDayOfWeek: { day: string; count: number }[];
+  leadsByDate: { date: string; count: number }[];
+  messagesByDay: { date: string; count: number }[];
+  conversationStatus: { status: string; count: number }[];
+  leadsByFlow: { flow: string; count: number }[];
+  messagesByHour: { hour: number; count: number }[];
 }
 
 export abstract class IAnalyticsRepository {
   abstract getAnalytics(
     userId: string,
-    weekStart: Date,
-    weekEnd: Date,
+    startDate: Date,
+    endDate: Date,
   ): Promise<AnalyticsResult>;
 }
