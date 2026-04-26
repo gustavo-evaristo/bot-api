@@ -22,6 +22,8 @@ import { IAnalyticsRepository } from 'src/domain/repositories/analytics.reposito
 import { AnalyticsRepository } from './repositories/analytics.repository';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
 import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repository';
+import { IFormRepository } from 'src/domain/repositories/form.repository';
+import { FormRepository } from './repositories/form.repository';
 
 @Module({
   providers: [
@@ -66,6 +68,10 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
       provide: IWhatsAppSessionRepository,
       useClass: WhatsAppSessionRepository,
     },
+    {
+      provide: IFormRepository,
+      useClass: FormRepository,
+    },
   ],
   exports: [
     PrismaService,
@@ -79,6 +85,7 @@ import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repos
     IMessageHistoryRepository,
     IAnalyticsRepository,
     IWhatsAppSessionRepository,
+    IFormRepository,
   ],
 })
 export class DatabaseModule {}

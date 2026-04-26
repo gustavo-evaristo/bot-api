@@ -23,6 +23,7 @@ model users {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   flows     flows[]
+  forms     forms[]
 }
 
 model flows {
@@ -135,4 +136,65 @@ model instance_lock {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model forms {
+  id          String           @id @default(uuid())
+  userId      String
+  user        users            @relation(fields: [userId], references: [id])
+  title       String
+  description String?
+  token       String           @unique @default(uuid())
+  isActive    Boolean          @default(false)
+  isDeleted   Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  fields      form_fields[]
+  responses   form_responses[]
+}
+
+model form_fields {
+  id          String               @id @default(uuid())
+  formId      String
+  form        forms                @relation(fields: [formId], references: [id])
+  isDeleted   Boolean              @default(false)
+  type        String
+  title       String?
+  label       String
+  placeholder String?
+  required    Boolean              @default(false)
+  order       Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  options     form_field_options[]
+  answers     form_answers[]
+}
+
+model form_field_options {
+  id        String      @id @default(uuid())
+  fieldId   String
+  field     form_fields @relation(fields: [fieldId], references: [id])
+  isDeleted Boolean     @default(false)
+  label     String
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model form_responses {
+  id        String         @id @default(uuid())
+  formId    String
+  form      forms          @relation(fields: [formId], references: [id])
+  createdAt DateTime       @default(now())
+  answers   form_answers[]
+}
+
+model form_answers {
+  id         String         @id @default(uuid())
+  responseId String
+  response   form_responses @relation(fields: [responseId], references: [id])
+  fieldId    String
+  field      form_fields    @relation(fields: [fieldId], references: [id])
+  value      String
+  createdAt  DateTime       @default(now())
 }
