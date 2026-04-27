@@ -70,6 +70,11 @@ export class ProcessMessageUseCase {
       leadPhoneNumber,
     );
 
+    // Automação desativada: humano assumiu, bot silencioso
+    if (conversation && !conversation.automationEnabled) {
+      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+    }
+
     // Nova conversa: verificar cooldown de 24h antes de reiniciar o fluxo
     if (!conversation) {
       const lastFinished = await this.conversationRepository.findLastFinished(

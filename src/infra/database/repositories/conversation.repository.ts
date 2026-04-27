@@ -56,6 +56,7 @@ export class ConversationRepository implements IConversationRepository {
       where: { id: conversation.id.toString() },
       data: {
         status: conversation.status,
+        automationEnabled: conversation.automationEnabled,
         updatedAt: conversation.updatedAt,
       },
     });
@@ -67,6 +68,7 @@ export class ConversationRepository implements IConversationRepository {
       leadPhoneNumber: string;
       leadName: string | null;
       status: string;
+      automationEnabled: boolean;
       flowId: string;
       flowTitle: string;
       kanbanStageName: string | null;
@@ -84,6 +86,7 @@ export class ConversationRepository implements IConversationRepository {
           c."leadPhoneNumber",
           c."leadName",
           c.status,
+          c."automationEnabled",
           k.id           AS "flowId",
           k.title        AS "flowTitle",
           ks.title       AS "kanbanStageName",
@@ -116,6 +119,7 @@ export class ConversationRepository implements IConversationRepository {
       leadPhoneNumber: r.leadPhoneNumber,
       leadName: r.leadName,
       status: r.status,
+      automationEnabled: r.automationEnabled,
       flowId: r.flowId,
       flowTitle: r.flowTitle,
       kanbanStageName: r.kanbanStageName ?? null,

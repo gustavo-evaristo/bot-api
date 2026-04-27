@@ -22,9 +22,10 @@ model users {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  flows     flows[]
-  forms     forms[]
-  kanbans   kanbans[]
+  flows         flows[]
+  forms         forms[]
+  kanbans       kanbans[]
+  quick_replies quick_replies[]
 }
 
 model flows {
@@ -80,17 +81,18 @@ model node_options {
 }
 
 model conversations {
-  id              String                  @id @default(uuid())
-  flowId          String
-  flow            flows                   @relation(fields: [flowId], references: [id])
-  leadPhoneNumber String
-  leadName        String?
-  status          String                  @default("ACTIVE")
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  progress        conversation_progress?
-  leadResponses   lead_responses[]
-  messageHistory  message_history[]
+  id                String                  @id @default(uuid())
+  flowId            String
+  flow              flows                   @relation(fields: [flowId], references: [id])
+  leadPhoneNumber   String
+  leadName          String?
+  status            String                  @default("ACTIVE")
+  automationEnabled Boolean                 @default(true)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  progress          conversation_progress?
+  leadResponses     lead_responses[]
+  messageHistory    message_history[]
 }
 
 model message_history {
@@ -142,6 +144,16 @@ model instance_lock {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model quick_replies {
+  id        String   @id @default(uuid())
+  userId    String
+  user      users    @relation(fields: [userId], references: [id])
+  shortcut  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model kanbans {

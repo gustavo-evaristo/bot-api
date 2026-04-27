@@ -11,6 +11,7 @@ type ConversationEntityProps = {
   leadPhoneNumber: string;
   leadName?: string | null;
   status?: ConversationStatus | string | null;
+  automationEnabled?: boolean | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 };
@@ -21,6 +22,7 @@ export class ConversationEntity {
   leadPhoneNumber: string;
   leadName: string | null;
   status: ConversationStatus;
+  automationEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 
@@ -43,6 +45,7 @@ export class ConversationEntity {
     this.leadName = props.leadName ?? null;
     this.status =
       (props.status as ConversationStatus) ?? ConversationStatus.ACTIVE;
+    this.automationEnabled = props.automationEnabled ?? true;
 
     const createdAt = props.createdAt || new Date();
     this.createdAt = createdAt;
@@ -55,6 +58,16 @@ export class ConversationEntity {
 
   finish() {
     this.status = ConversationStatus.FINISHED;
+    this.touch();
+  }
+
+  disableAutomation() {
+    this.automationEnabled = false;
+    this.touch();
+  }
+
+  enableAutomation() {
+    this.automationEnabled = true;
     this.touch();
   }
 

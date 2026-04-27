@@ -7,6 +7,7 @@ import { ConversationModule } from './controllers/conversation/conversation.modu
 import { AnalyticsModule } from './controllers/analytics/analytics.module';
 import { FormModule } from './controllers/form/form.module';
 import { KanbanModule } from './controllers/kanban/kanban.module';
+import { QuickReplyModule } from './controllers/quick-reply/quick-reply.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { KanbanModule } from './controllers/kanban/kanban.module';
     AnalyticsModule,
     FormModule,
     KanbanModule,
+    QuickReplyModule,
   ],
 })
 export class InfraModule {}

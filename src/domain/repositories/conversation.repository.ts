@@ -5,6 +5,7 @@ export interface ConversationSummary {
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
+  automationEnabled: boolean;
   flowId: string;
   flowTitle: string;
   kanbanStageName: string | null;

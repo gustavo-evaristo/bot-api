@@ -69,6 +69,7 @@ export class ConversationProgressRepository implements IConversationProgressRepo
         followUpSentAt: null,
         waitingForResponseSince: { lt: threshold },
         conversation: {
+          automationEnabled: true,
           flow: { isActive: true, isDeleted: false },
         },
       },
