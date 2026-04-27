@@ -19,6 +19,7 @@ export class FlowRepository implements IFlowRepository {
       description: flow.description,
       phoneNumber: flow.phoneNumber,
       startNodeId: flow.startNodeId,
+      kanbanId: flow.kanbanId,
       createdAt: flow.createdAt,
       updatedAt: flow.updatedAt,
     };
@@ -52,6 +53,7 @@ export class FlowRepository implements IFlowRepository {
       description: flow.description,
       phoneNumber: flow.phoneNumber,
       startNodeId: flow.startNodeId,
+      kanbanId: flow.kanbanId,
       createdAt: flow.createdAt,
       updatedAt: flow.updatedAt,
     };
@@ -104,12 +106,14 @@ export class FlowRepository implements IFlowRepository {
       id: flow.id,
       title: flow.title,
       userId: flow.userId,
+      kanbanId: flow.kanbanId ?? null,
       startNodeId: flow.startNodeId ?? null,
       nodes: flow.nodes.map((node) => ({
         id: node.id,
         type: node.type,
         content: node.content,
         defaultNextNodeId: node.defaultNextNodeId ?? null,
+        kanbanStageId: node.kanbanStageId ?? null,
         x: node.x,
         y: node.y,
         options: node.options.map((opt) => ({

@@ -31,6 +31,9 @@ class FlowNodeResponse {
   @ApiPropertyOptional({ example: randomUUID(), nullable: true })
   defaultNextNodeId: string | null;
 
+  @ApiPropertyOptional({ example: randomUUID(), nullable: true })
+  kanbanStageId: string | null;
+
   @ApiProperty({ example: 0 })
   x: number;
 
@@ -50,6 +53,9 @@ export class GetFlowResponse {
 
   @ApiProperty({ example: randomUUID() })
   userId: string;
+
+  @ApiPropertyOptional({ example: randomUUID(), nullable: true })
+  kanbanId: string | null;
 
   @ApiPropertyOptional({ example: randomUUID(), nullable: true })
   startNodeId: string | null;

@@ -7,6 +7,7 @@ interface Input {
   userId: string;
   title: string;
   description?: string | null;
+  kanbanId?: string | null;
 }
 
 @Injectable()
@@ -16,7 +17,7 @@ export class UpdateFlowUseCase {
     private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute({ id, userId, title, description }: Input): Promise<FlowEntity> {
+  async execute({ id, userId, title, description, kanbanId }: Input): Promise<FlowEntity> {
     const user = await this.userRepository.get(userId);
 
     if (!user) {
@@ -33,7 +34,7 @@ export class UpdateFlowUseCase {
       throw new Error('User does not own this flow');
     }
 
-    flow.update({ title, description });
+    flow.update({ title, description, kanbanId });
 
     await this.flowRepository.update(flow);
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { isAfter, subHours } from 'date-fns';
 import { IFlowRepository } from 'src/domain/repositories/flow.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
@@ -25,6 +25,8 @@ interface Output {
 
 @Injectable()
 export class ProcessMessageUseCase {
+  private readonly logger = new Logger(ProcessMessageUseCase.name);
+
   constructor(
     private readonly kanbanRepository: IFlowRepository,
     private readonly conversationRepository: IConversationRepository,
@@ -76,8 +78,9 @@ export class ProcessMessageUseCase {
 
       if (
         lastFinished &&
-        isAfter(lastFinished.updatedAt, subHours(new Date(), 24))
+        isAfter(lastFinished.updatedAt, subHours(new Date(), 1))
       ) {
+        this.logger.warn(`[${leadPhoneNumber}] Cooldown ativo — última conversa encerrada há menos de 1h. Ignorando nova mensagem.`);
         return {
           conversationId: lastFinished.id.toString(),
           userId,
@@ -119,22 +122,21 @@ export class ProcessMessageUseCase {
         conversation.id.toString(),
       );
 
-    if (!progress || !progress.waitingForResponse) {
-      return {
-        conversationId: conversation.id.toString(),
-        userId,
-        messagesToSend: [],
-      };
+    if (!progress) {
+      this.logger.warn(`[${leadPhoneNumber}] Progresso não encontrado para conversa ${conversation.id}`);
+      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+    }
+
+    if (!progress.waitingForResponse) {
+      this.logger.warn(`[${leadPhoneNumber}] Bot não está aguardando resposta (waitingForResponse=false) — mensagem ignorada`);
+      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
     }
 
     const currentNode = nodeMap.get(progress.currentNodeId);
 
     if (!currentNode) {
-      return {
-        conversationId: conversation.id.toString(),
-        userId,
-        messagesToSend: [],
-      };
+      this.logger.error(`[${leadPhoneNumber}] Nó atual não encontrado no mapa: currentNodeId=${progress.currentNodeId}. Verifique se o nó existe e não foi deletado.`);
+      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
     }
 
     // Determinar próximo nó e salvar resposta
@@ -185,13 +187,10 @@ export class ProcessMessageUseCase {
     await this.leadResponseRepository.create(leadResponse);
 
     if (nextNodeId === null) {
+      this.logger.warn(`[${leadPhoneNumber}] Nó "${currentNode.type}" (id=${currentNode.id}) não tem próximo nó definido (defaultNextNodeId=null). Conversa encerrada.`);
       conversation.finish();
       await this.conversationRepository.update(conversation);
-      return {
-        conversationId: conversation.id.toString(),
-        userId,
-        messagesToSend: [],
-      };
+      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
     }
 
     progress.advanceTo(nextNodeId);
@@ -217,6 +216,7 @@ export class ProcessMessageUseCase {
       const currentNode = nodeMap.get(progress.currentNodeId);
 
       if (!currentNode) {
+        this.logger.error(`Nó não encontrado no mapa durante execução: nodeId=${progress.currentNodeId}. Verifique conexões do fluxo.`);
         conversation.finish();
         await this.conversationRepository.update(conversation);
         break;

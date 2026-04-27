@@ -18,6 +18,7 @@ interface Input {
   type: NodeType;
   content: string;
   defaultNextNodeId?: string | null;
+  kanbanStageId?: string | null;
   x?: number;
   y?: number;
   options?: NodeOptionInput[];
@@ -38,6 +39,7 @@ export class CreateNodeUseCase {
     type,
     content,
     defaultNextNodeId,
+    kanbanStageId,
     x,
     y,
     options,
@@ -57,6 +59,7 @@ export class CreateNodeUseCase {
       type,
       content,
       defaultNextNodeId: defaultNextNodeId ?? null,
+      kanbanStageId: kanbanStageId ?? null,
       x: x ?? 0,
       y: y ?? 0,
     });

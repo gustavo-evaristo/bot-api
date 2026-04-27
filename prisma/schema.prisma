@@ -24,12 +24,15 @@ model users {
   updatedAt DateTime @updatedAt
   flows     flows[]
   forms     forms[]
+  kanbans   kanbans[]
 }
 
 model flows {
   id          String          @id @default(uuid())
   userId      String
   user        users           @relation(fields: [userId], references: [id])
+  kanbanId    String?
+  kanban      kanbans?        @relation(fields: [kanbanId], references: [id])
   isActive    Boolean         @default(true)
   isDeleted   Boolean         @default(false)
   title       String
@@ -46,6 +49,8 @@ model flow_nodes {
   id                String         @id @default(uuid())
   flowId            String
   flow              flows          @relation(fields: [flowId], references: [id])
+  kanbanStageId     String?
+  kanbanStage       kanban_stages? @relation(fields: [kanbanStageId], references: [id])
   isDeleted         Boolean        @default(false)
   type              String
   content           String
@@ -136,6 +141,32 @@ model instance_lock {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model kanbans {
+  id          String          @id @default(uuid())
+  userId      String
+  user        users           @relation(fields: [userId], references: [id])
+  title       String
+  description String?
+  isDeleted   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  stages      kanban_stages[]
+  flows       flows[]
+}
+
+model kanban_stages {
+  id        String       @id @default(uuid())
+  kanbanId  String
+  kanban    kanbans      @relation(fields: [kanbanId], references: [id])
+  title     String
+  color     String?
+  order     Int          @default(0)
+  isDeleted Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  nodes     flow_nodes[]
 }
 
 model forms {

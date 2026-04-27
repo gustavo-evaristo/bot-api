@@ -19,6 +19,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
       ...node,
       id: UUID.from(node.id),
       flowId: UUID.from(node.flowId),
+      kanbanStageId: node.kanbanStageId,
       type: node.type as NodeType,
     });
   }
@@ -28,6 +29,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
       data: {
         id: node.id.toString(),
         flowId: node.flowId.toString(),
+        kanbanStageId: node.kanbanStageId,
         isDeleted: node.isDeleted,
         type: node.type,
         content: node.content,
@@ -44,6 +46,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
     await this.prismaService.flow_nodes.update({
       where: { id: node.id.toString() },
       data: {
+        kanbanStageId: node.kanbanStageId,
         isDeleted: node.isDeleted,
         type: node.type,
         content: node.content,

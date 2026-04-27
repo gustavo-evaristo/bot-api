@@ -28,6 +28,7 @@ export class ListFlowsController {
       title: flow.title,
       description: flow.description,
       phoneNumber: flow.phoneNumber,
+      kanbanId: flow.kanbanId ?? null,
       createdAt: flow.createdAt,
     }));
   }

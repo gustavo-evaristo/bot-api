@@ -10,6 +10,7 @@ export enum NodeType {
 type FlowNodeEntityProps = {
   id?: string | UUID | null;
   flowId: string | UUID;
+  kanbanStageId?: string | null;
   isDeleted?: boolean | null;
   type: NodeType;
   content: string;
@@ -23,6 +24,7 @@ type FlowNodeEntityProps = {
 export class FlowNodeEntity {
   id: UUID;
   flowId: UUID;
+  kanbanStageId: string | null;
   isDeleted: boolean;
   type: NodeType;
   content: string;
@@ -47,6 +49,7 @@ export class FlowNodeEntity {
       this.flowId = UUID.from(props.flowId);
     }
 
+    this.kanbanStageId = props.kanbanStageId ?? null;
     this.isDeleted = props.isDeleted ?? false;
     this.type = props.type;
     this.content = props.content;
@@ -82,12 +85,14 @@ export class FlowNodeEntity {
     type: NodeType;
     content: string;
     defaultNextNodeId?: string | null;
+    kanbanStageId?: string | null;
     x?: number;
     y?: number;
   }) {
     this.type = props.type;
     this.content = props.content;
     this.defaultNextNodeId = props.defaultNextNodeId ?? null;
+    if ('kanbanStageId' in props) this.kanbanStageId = props.kanbanStageId ?? null;
     if (props.x !== undefined) this.x = props.x;
     if (props.y !== undefined) this.y = props.y;
     this.touch();

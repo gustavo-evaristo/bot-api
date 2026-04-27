@@ -24,6 +24,10 @@ import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-ses
 import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repository';
 import { IFormRepository } from 'src/domain/repositories/form.repository';
 import { FormRepository } from './repositories/form.repository';
+import { IKanbanRepository } from 'src/domain/repositories/kanban.repository';
+import { KanbanRepository } from './repositories/kanban.repository';
+import { IKanbanStageRepository } from 'src/domain/repositories/kanban-stage.repository';
+import { KanbanStageRepository } from './repositories/kanban-stage.repository';
 
 @Module({
   providers: [
@@ -72,6 +76,14 @@ import { FormRepository } from './repositories/form.repository';
       provide: IFormRepository,
       useClass: FormRepository,
     },
+    {
+      provide: IKanbanRepository,
+      useClass: KanbanRepository,
+    },
+    {
+      provide: IKanbanStageRepository,
+      useClass: KanbanStageRepository,
+    },
   ],
   exports: [
     PrismaService,
@@ -86,6 +98,8 @@ import { FormRepository } from './repositories/form.repository';
     IAnalyticsRepository,
     IWhatsAppSessionRepository,
     IFormRepository,
+    IKanbanRepository,
+    IKanbanStageRepository,
   ],
 })
 export class DatabaseModule {}

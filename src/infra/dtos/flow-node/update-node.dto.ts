@@ -38,6 +38,11 @@ export class UpdateNodeDto {
   @IsNumber()
   y?: number;
 
+  @ApiPropertyOptional({ example: null, nullable: true })
+  @IsOptional()
+  @IsUUID()
+  kanbanStageId?: string | null;
+
   @ApiPropertyOptional({ type: NodeOptionDto, isArray: true })
   @IsOptional()
   @IsArray()

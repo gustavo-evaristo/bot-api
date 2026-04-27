@@ -5,6 +5,7 @@ interface FlowEntityProps {
   isActive?: boolean | null;
   isDeleted?: boolean | null;
   userId: string | UUID;
+  kanbanId?: string | null;
   title: string;
   description?: string | null;
   phoneNumber?: string | null;
@@ -16,6 +17,7 @@ interface FlowEntityProps {
 interface UpdateFlowEntityProps {
   title: string;
   description?: string | null;
+  kanbanId?: string | null;
 }
 
 export interface NodeOptionDetail {
@@ -31,6 +33,7 @@ export interface FlowNodeDetail {
   type: string;
   content: string;
   defaultNextNodeId: string | null;
+  kanbanStageId: string | null;
   x: number;
   y: number;
   options: NodeOptionDetail[];
@@ -40,6 +43,7 @@ export interface FlowDetails {
   id: string;
   title: string;
   userId: string;
+  kanbanId: string | null;
   startNodeId: string | null;
   nodes: FlowNodeDetail[];
 }
@@ -47,6 +51,7 @@ export interface FlowDetails {
 export class FlowEntity {
   id: UUID;
   userId: UUID;
+  kanbanId: string | null;
   isActive: boolean;
   isDeleted: boolean;
   title: string;
@@ -71,6 +76,7 @@ export class FlowEntity {
       this.userId = UUID.from(props.userId);
     }
 
+    this.kanbanId = props.kanbanId ?? null;
     this.isActive = props.isActive ?? false;
     this.isDeleted = props.isDeleted ?? false;
     this.title = props.title;
@@ -110,9 +116,10 @@ export class FlowEntity {
     return this.userId.equals(userId);
   }
 
-  update({ title, description }: UpdateFlowEntityProps) {
+  update({ title, description, kanbanId }: UpdateFlowEntityProps) {
     this.title = title;
     this.description = description ?? null;
+    this.kanbanId = kanbanId !== undefined ? (kanbanId ?? null) : this.kanbanId;
     this.touch();
   }
 

@@ -6,6 +6,7 @@ import { FlowNodeModule } from './controllers/flow-node/flow-node.module';
 import { ConversationModule } from './controllers/conversation/conversation.module';
 import { AnalyticsModule } from './controllers/analytics/analytics.module';
 import { FormModule } from './controllers/form/form.module';
+import { KanbanModule } from './controllers/kanban/kanban.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FormModule } from './controllers/form/form.module';
     ConversationModule,
     AnalyticsModule,
     FormModule,
+    KanbanModule,
   ],
 })
 export class InfraModule {}

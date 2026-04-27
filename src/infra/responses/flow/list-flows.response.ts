@@ -19,4 +19,7 @@ export abstract class ListFlowsResponse {
 
   @ApiProperty({ example: new Date() })
   createdAt: Date;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  kanbanId: string | null;
 }
