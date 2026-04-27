@@ -4,6 +4,7 @@ type ConversationProgressEntityProps = {
   id?: string | UUID | null;
   conversationId: string | UUID;
   currentNodeId: string;
+  lastKanbanStageId?: string | null;
   waitingForResponse?: boolean | null;
   waitingForResponseSince?: Date | null;
   followUpSentAt?: Date | null;
@@ -15,6 +16,7 @@ export class ConversationProgressEntity {
   id: UUID;
   conversationId: UUID;
   currentNodeId: string;
+  lastKanbanStageId: string | null;
   waitingForResponse: boolean;
   waitingForResponseSince: Date | null;
   followUpSentAt: Date | null;
@@ -37,6 +39,7 @@ export class ConversationProgressEntity {
     }
 
     this.currentNodeId = props.currentNodeId;
+    this.lastKanbanStageId = props.lastKanbanStageId ?? null;
     this.waitingForResponse = props.waitingForResponse ?? false;
     this.waitingForResponseSince = props.waitingForResponseSince ?? null;
     this.followUpSentAt = props.followUpSentAt ?? null;
@@ -56,6 +59,10 @@ export class ConversationProgressEntity {
     this.waitingForResponseSince = null;
     this.followUpSentAt = null;
     this.touch();
+  }
+
+  recordKanbanStage(stageId: string) {
+    this.lastKanbanStageId = stageId;
   }
 
   waitForResponse() {

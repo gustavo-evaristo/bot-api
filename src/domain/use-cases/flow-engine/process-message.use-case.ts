@@ -54,6 +54,7 @@ export class ProcessMessageUseCase {
     }
 
     const userId = kanban.userId.toString();
+
     const details = await this.kanbanRepository.getDetails(
       kanban.id.toString(),
     );
@@ -222,12 +223,17 @@ export class ProcessMessageUseCase {
         break;
       }
 
+      if (currentNode.kanbanStageId) {
+        progress.recordKanbanStage(currentNode.kanbanStageId);
+      }
+
       if (currentNode.type === NodeType.END) {
         if (currentNode.content?.trim()) {
           messagesToSend.push(currentNode.content);
         }
         conversation.finish();
         await this.conversationRepository.update(conversation);
+        await this.conversationProgressRepository.update(progress);
         break;
       }
 
@@ -237,6 +243,7 @@ export class ProcessMessageUseCase {
         if (!currentNode.defaultNextNodeId) {
           conversation.finish();
           await this.conversationRepository.update(conversation);
+          await this.conversationProgressRepository.update(progress);
           break;
         }
 

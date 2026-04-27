@@ -18,6 +18,7 @@ export class ConversationProgressRepository implements IConversationProgressRepo
         id: progress.id.toString(),
         conversationId: progress.conversationId.toString(),
         currentNodeId: progress.currentNodeId,
+        lastKanbanStageId: progress.lastKanbanStageId,
         waitingForResponse: progress.waitingForResponse,
         waitingForResponseSince: progress.waitingForResponseSince,
         followUpSentAt: progress.followUpSentAt,
@@ -48,6 +49,7 @@ export class ConversationProgressRepository implements IConversationProgressRepo
       where: { conversationId: progress.conversationId.toString() },
       data: {
         currentNodeId: progress.currentNodeId,
+        lastKanbanStageId: progress.lastKanbanStageId,
         waitingForResponse: progress.waitingForResponse,
         waitingForResponseSince: progress.waitingForResponseSince,
         followUpSentAt: progress.followUpSentAt,

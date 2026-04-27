@@ -76,19 +76,17 @@ export class KanbanRepository implements IKanbanRepository {
 
     const leadRows = await this.prismaService.$queryRaw<LeadRow[]>`
       SELECT DISTINCT ON (c."leadPhoneNumber")
-        c.id              AS "conversationId",
+        c.id                      AS "conversationId",
         c."leadName",
         c."leadPhoneNumber",
-        f.title           AS "flowTitle",
-        fn."kanbanStageId"
+        f.title                   AS "flowTitle",
+        cp."lastKanbanStageId"    AS "kanbanStageId"
       FROM conversations c
       JOIN flows f ON f.id = c."flowId"
         AND f."kanbanId" = ${kanbanId}
         AND f."isDeleted" = false
       JOIN conversation_progress cp ON cp."conversationId" = c.id
-      JOIN flow_nodes fn ON fn.id = cp."currentNodeId"
-        AND fn."isDeleted" = false
-        AND fn."kanbanStageId" IS NOT NULL
+        AND cp."lastKanbanStageId" IS NOT NULL
       ORDER BY c."leadPhoneNumber", c."updatedAt" DESC
     `;
 

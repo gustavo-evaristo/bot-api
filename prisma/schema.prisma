@@ -107,6 +107,7 @@ model conversation_progress {
   conversationId          String        @unique
   conversation            conversations @relation(fields: [conversationId], references: [id])
   currentNodeId           String
+  lastKanbanStageId       String?
   waitingForResponse      Boolean       @default(false)
   waitingForResponseSince DateTime?
   followUpSentAt          DateTime?
