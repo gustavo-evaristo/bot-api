@@ -48,3 +48,10 @@ export class UpdateKanbanStageDto {
   @IsString()
   color?: string;
 }
+
+export class MoveLeadStageDto {
+  @ApiProperty({ description: 'ID do estágio de destino' })
+  @IsString()
+  @IsNotEmpty()
+  targetStageId: string;
+}

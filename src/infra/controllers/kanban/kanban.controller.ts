@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/infra/authentication/jwt.guard';
-import { CreateKanbanDto, UpdateKanbanDto, CreateKanbanStageDto, UpdateKanbanStageDto } from 'src/infra/dtos/kanban/kanban.dto';
+import { CreateKanbanDto, UpdateKanbanDto, CreateKanbanStageDto, UpdateKanbanStageDto, MoveLeadStageDto } from 'src/infra/dtos/kanban/kanban.dto';
 import { CreateKanbanUseCase } from 'src/domain/use-cases/kanban/create-kanban.use-case';
 import { UpdateKanbanUseCase } from 'src/domain/use-cases/kanban/update-kanban.use-case';
 import { DeleteKanbanUseCase } from 'src/domain/use-cases/kanban/delete-kanban.use-case';
@@ -21,6 +21,7 @@ import { CreateKanbanStageUseCase } from 'src/domain/use-cases/kanban/create-kan
 import { UpdateKanbanStageUseCase } from 'src/domain/use-cases/kanban/update-kanban-stage.use-case';
 import { DeleteKanbanStageUseCase } from 'src/domain/use-cases/kanban/delete-kanban-stage.use-case';
 import { ListKanbanStagesUseCase } from 'src/domain/use-cases/kanban/list-kanban-stages.use-case';
+import { MoveLeadStageUseCase } from 'src/domain/use-cases/kanban/move-lead-stage.use-case';
 
 @ApiTags('Kanbans')
 @ApiBearerAuth()
@@ -37,6 +38,7 @@ export class KanbanController {
     private readonly updateStage: UpdateKanbanStageUseCase,
     private readonly deleteStage: DeleteKanbanStageUseCase,
     private readonly listStages: ListKanbanStagesUseCase,
+    private readonly moveLeadStageUseCase: MoveLeadStageUseCase,
   ) {}
 
   @Get()
@@ -120,6 +122,23 @@ export class KanbanController {
     @Req() { user }: IReq,
   ) {
     await this.deleteStage.execute({ userId: user.id, kanbanId: id, stageId });
+    return { status: 'ok' };
+  }
+
+  @Patch(':id/leads/:conversationId/stage')
+  @ApiOperation({ summary: 'Move lead to a different kanban stage' })
+  async moveLeadStageHandler(
+    @Param('id') id: string,
+    @Param('conversationId') conversationId: string,
+    @Body() body: MoveLeadStageDto,
+    @Req() { user }: IReq,
+  ) {
+    await this.moveLeadStageUseCase.execute({
+      userId: user.id,
+      kanbanId: id,
+      conversationId,
+      targetStageId: body.targetStageId,
+    });
     return { status: 'ok' };
   }
 }

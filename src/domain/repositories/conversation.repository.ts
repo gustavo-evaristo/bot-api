@@ -7,6 +7,7 @@ export interface ConversationSummary {
   status: string;
   flowId: string;
   flowTitle: string;
+  kanbanStageName: string | null;
   lastMessage: { content: string; sender: string; sentAt: Date } | null;
   createdAt: Date;
   updatedAt: Date;

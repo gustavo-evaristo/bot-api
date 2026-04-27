@@ -69,6 +69,7 @@ export class ConversationRepository implements IConversationRepository {
       status: string;
       flowId: string;
       flowTitle: string;
+      kanbanStageName: string | null;
       lastMessageContent: string | null;
       lastMessageSender: string | null;
       lastMessageSentAt: Date | null;
@@ -85,6 +86,7 @@ export class ConversationRepository implements IConversationRepository {
           c.status,
           k.id           AS "flowId",
           k.title        AS "flowTitle",
+          ks.title       AS "kanbanStageName",
           mh.content     AS "lastMessageContent",
           mh.sender      AS "lastMessageSender",
           mh."createdAt" AS "lastMessageSentAt",
@@ -92,6 +94,9 @@ export class ConversationRepository implements IConversationRepository {
           c."updatedAt"
         FROM conversations c
         JOIN flows k ON k.id = c."flowId"
+        LEFT JOIN conversation_progress cp ON cp."conversationId" = c.id
+        LEFT JOIN kanban_stages ks ON ks.id = cp."lastKanbanStageId"
+          AND ks."isDeleted" = false
         LEFT JOIN LATERAL (
           SELECT content, sender, "createdAt"
           FROM message_history
@@ -113,6 +118,7 @@ export class ConversationRepository implements IConversationRepository {
       status: r.status,
       flowId: r.flowId,
       flowTitle: r.flowTitle,
+      kanbanStageName: r.kanbanStageName ?? null,
       lastMessage:
         r.lastMessageContent !== null &&
         r.lastMessageSender !== null &&
