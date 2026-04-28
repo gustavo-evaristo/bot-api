@@ -50,8 +50,10 @@ model flow_nodes {
   id                String         @id @default(uuid())
   flowId            String
   flow              flows          @relation(fields: [flowId], references: [id])
-  kanbanStageId     String?
-  kanbanStage       kanban_stages? @relation(fields: [kanbanStageId], references: [id])
+  kanbanStageId           String?
+  kanbanStage             kanban_stages? @relation("NodeCurrentStage", fields: [kanbanStageId], references: [id])
+  postFillKanbanStageId   String?
+  postFillKanbanStage     kanban_stages? @relation("NodePostFillStage", fields: [postFillKanbanStageId], references: [id])
   formId            String?
   form              forms?         @relation(fields: [formId], references: [id])
   isDeleted         Boolean        @default(false)
@@ -181,7 +183,8 @@ model kanban_stages {
   isDeleted Boolean      @default(false)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  nodes     flow_nodes[]
+  nodes             flow_nodes[] @relation("NodeCurrentStage")
+  postFillNodes     flow_nodes[] @relation("NodePostFillStage")
 }
 
 model forms {

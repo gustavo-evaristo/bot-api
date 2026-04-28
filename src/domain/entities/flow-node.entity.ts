@@ -12,6 +12,7 @@ type FlowNodeEntityProps = {
   id?: string | UUID | null;
   flowId: string | UUID;
   kanbanStageId?: string | null;
+  postFillKanbanStageId?: string | null;
   formId?: string | null;
   isDeleted?: boolean | null;
   type: NodeType;
@@ -27,6 +28,7 @@ export class FlowNodeEntity {
   id: UUID;
   flowId: UUID;
   kanbanStageId: string | null;
+  postFillKanbanStageId: string | null;
   formId: string | null;
   isDeleted: boolean;
   type: NodeType;
@@ -53,6 +55,7 @@ export class FlowNodeEntity {
     }
 
     this.kanbanStageId = props.kanbanStageId ?? null;
+    this.postFillKanbanStageId = props.postFillKanbanStageId ?? null;
     this.formId = props.formId ?? null;
     this.isDeleted = props.isDeleted ?? false;
     this.type = props.type;
@@ -90,6 +93,7 @@ export class FlowNodeEntity {
     content: string;
     defaultNextNodeId?: string | null;
     kanbanStageId?: string | null;
+    postFillKanbanStageId?: string | null;
     formId?: string | null;
     x?: number;
     y?: number;
@@ -98,6 +102,7 @@ export class FlowNodeEntity {
     this.content = props.content;
     this.defaultNextNodeId = props.defaultNextNodeId ?? null;
     if (props.kanbanStageId !== undefined) this.kanbanStageId = props.kanbanStageId ?? null;
+    if (props.postFillKanbanStageId !== undefined) this.postFillKanbanStageId = props.postFillKanbanStageId ?? null;
     if (props.formId !== undefined) this.formId = props.formId ?? null;
     if (props.x !== undefined) this.x = props.x;
     if (props.y !== undefined) this.y = props.y;

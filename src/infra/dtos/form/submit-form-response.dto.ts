@@ -28,4 +28,9 @@ export class SubmitFormResponseDTO {
   @IsOptional()
   @IsUUID()
   kanbanStageId?: string;
+
+  @ApiPropertyOptional({ example: 'kanban-stage-uuid' })
+  @IsOptional()
+  @IsUUID()
+  postFillKanbanStageId?: string;
 }

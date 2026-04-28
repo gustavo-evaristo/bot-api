@@ -22,6 +22,7 @@ export class CreateNodeController {
       content: body.content,
       defaultNextNodeId: body.defaultNextNodeId,
       kanbanStageId: body.kanbanStageId,
+      postFillKanbanStageId: body.postFillKanbanStageId,
       formId: body.formId,
       x: body.x,
       y: body.y,

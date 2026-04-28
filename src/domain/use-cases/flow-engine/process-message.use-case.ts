@@ -315,7 +315,7 @@ export class ProcessMessageUseCase {
     if (!form) return node.content;
 
     const params = new URLSearchParams({ phone: leadPhone });
-    if (node.kanbanStageId) params.set('stageId', node.kanbanStageId);
+    if (node.postFillKanbanStageId) params.set('postFillStageId', node.postFillKanbanStageId);
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const link = `${frontendUrl}/f/${form.token}?${params.toString()}`;

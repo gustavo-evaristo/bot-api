@@ -71,6 +71,11 @@ export class CreateNodeDto {
   @ApiPropertyOptional({ example: null, nullable: true })
   @IsOptional()
   @IsUUID()
+  postFillKanbanStageId?: string | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  @IsOptional()
+  @IsUUID()
   formId?: string | null;
 
   @ApiPropertyOptional({ type: NodeOptionDto, isArray: true })

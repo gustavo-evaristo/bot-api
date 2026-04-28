@@ -13,6 +13,7 @@ interface Input {
   answers: AnswerInput[];
   leadPhone?: string;
   kanbanStageId?: string;
+  postFillKanbanStageId?: string;
 }
 
 @Injectable()
@@ -23,7 +24,7 @@ export class SubmitFormResponseUseCase {
     private readonly conversationProgressRepository: IConversationProgressRepository,
   ) {}
 
-  async execute({ token, answers, leadPhone, kanbanStageId }: Input): Promise<void> {
+  async execute({ token, answers, leadPhone, kanbanStageId, postFillKanbanStageId }: Input): Promise<void> {
     const form = await this.formRepository.getByToken(token);
 
     if (!form) {
@@ -37,7 +38,8 @@ export class SubmitFormResponseUseCase {
 
     await this.formRepository.saveResponse(form.id.toString(), normalizedAnswers);
 
-    if (leadPhone && kanbanStageId) {
+    const stageToRecord = postFillKanbanStageId ?? kanbanStageId;
+    if (leadPhone && stageToRecord) {
       const conversation = await this.conversationRepository.findByLeadPhone(
         form.userId.toString(),
         leadPhone,
@@ -49,7 +51,7 @@ export class SubmitFormResponseUseCase {
         );
 
         if (progress) {
-          progress.recordKanbanStage(kanbanStageId);
+          progress.recordKanbanStage(stageToRecord);
           await this.conversationProgressRepository.update(progress);
         }
       }

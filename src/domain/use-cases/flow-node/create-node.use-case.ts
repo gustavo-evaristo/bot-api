@@ -19,6 +19,7 @@ interface Input {
   content: string;
   defaultNextNodeId?: string | null;
   kanbanStageId?: string | null;
+  postFillKanbanStageId?: string | null;
   formId?: string | null;
   x?: number;
   y?: number;
@@ -41,6 +42,7 @@ export class CreateNodeUseCase {
     content,
     defaultNextNodeId,
     kanbanStageId,
+    postFillKanbanStageId,
     formId,
     x,
     y,
@@ -62,6 +64,7 @@ export class CreateNodeUseCase {
       content,
       defaultNextNodeId: defaultNextNodeId ?? null,
       kanbanStageId: kanbanStageId ?? null,
+      postFillKanbanStageId: postFillKanbanStageId ?? null,
       formId: formId ?? null,
       x: x ?? 0,
       y: y ?? 0,
