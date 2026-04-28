@@ -22,8 +22,8 @@ export class SubmitFormResponseController {
   @HttpCode(204)
   async submitFormResponse(
     @Param('token') token: string,
-    @Body() { answers }: SubmitFormResponseDTO,
+    @Body() { answers, leadPhone, kanbanStageId }: SubmitFormResponseDTO,
   ) {
-    await this.submitFormResponseUseCase.execute({ token, answers });
+    await this.submitFormResponseUseCase.execute({ token, answers, leadPhone, kanbanStageId });
   }
 }

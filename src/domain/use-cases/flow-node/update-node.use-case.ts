@@ -19,6 +19,7 @@ interface Input {
   content: string;
   defaultNextNodeId?: string | null;
   kanbanStageId?: string | null;
+  formId?: string | null;
   x?: number;
   y?: number;
   options?: NodeOptionInput[];
@@ -40,6 +41,7 @@ export class UpdateNodeUseCase {
     content,
     defaultNextNodeId,
     kanbanStageId,
+    formId,
     x,
     y,
     options,
@@ -57,7 +59,7 @@ export class UpdateNodeUseCase {
       throw new Error('User does not own this flow');
     }
 
-    node.update({ type, content, defaultNextNodeId, kanbanStageId, x, y });
+    node.update({ type, content, defaultNextNodeId, kanbanStageId, formId, x, y });
     await this.flowNodeRepository.save(node);
 
     // Substituir opções (delete + create)

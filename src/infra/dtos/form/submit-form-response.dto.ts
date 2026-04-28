@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class AnswerDTO {
@@ -18,4 +18,14 @@ export class SubmitFormResponseDTO {
   @Type(() => AnswerDTO)
   @ApiProperty({ type: [AnswerDTO] })
   answers: AnswerDTO[];
+
+  @ApiPropertyOptional({ example: '5511999999999' })
+  @IsOptional()
+  @IsString()
+  leadPhone?: string;
+
+  @ApiPropertyOptional({ example: 'kanban-stage-uuid' })
+  @IsOptional()
+  @IsUUID()
+  kanbanStageId?: string;
 }

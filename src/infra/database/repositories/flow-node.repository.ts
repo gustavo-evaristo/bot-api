@@ -20,6 +20,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
       id: UUID.from(node.id),
       flowId: UUID.from(node.flowId),
       kanbanStageId: node.kanbanStageId,
+      formId: node.formId,
       type: node.type as NodeType,
     });
   }
@@ -30,6 +31,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
         id: node.id.toString(),
         flowId: node.flowId.toString(),
         kanbanStageId: node.kanbanStageId,
+        formId: node.formId,
         isDeleted: node.isDeleted,
         type: node.type,
         content: node.content,
@@ -47,6 +49,7 @@ export class FlowNodeRepository implements IFlowNodeRepository {
       where: { id: node.id.toString() },
       data: {
         kanbanStageId: node.kanbanStageId,
+        formId: node.formId,
         isDeleted: node.isDeleted,
         type: node.type,
         content: node.content,

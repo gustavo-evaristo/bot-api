@@ -114,6 +114,7 @@ export class FlowRepository implements IFlowRepository {
         content: node.content,
         defaultNextNodeId: node.defaultNextNodeId ?? null,
         kanbanStageId: node.kanbanStageId ?? null,
+        formId: node.formId ?? null,
         x: node.x,
         y: node.y,
         options: node.options.map((opt) => ({

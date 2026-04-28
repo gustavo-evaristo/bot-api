@@ -34,6 +34,9 @@ class FlowNodeResponse {
   @ApiPropertyOptional({ example: randomUUID(), nullable: true })
   kanbanStageId: string | null;
 
+  @ApiPropertyOptional({ example: randomUUID(), nullable: true })
+  formId: string | null;
+
   @ApiProperty({ example: 0 })
   x: number;
 

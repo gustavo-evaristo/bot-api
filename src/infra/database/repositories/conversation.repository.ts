@@ -223,4 +223,25 @@ export class ConversationRepository implements IConversationRepository {
 
     return records.map((r) => r.id);
   }
+
+  async findByLeadPhone(
+    userId: string,
+    leadPhoneNumber: string,
+  ): Promise<ConversationEntity | null> {
+    const r = await this.prismaService.conversations.findFirst({
+      where: {
+        leadPhoneNumber,
+        flow: { userId, isDeleted: false },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (!r) return null;
+
+    return new ConversationEntity({
+      ...r,
+      id: UUID.from(r.id),
+      flowId: UUID.from(r.flowId),
+    });
+  }
 }

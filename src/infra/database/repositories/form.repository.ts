@@ -49,6 +49,28 @@ export class FormRepository implements IFormRepository {
     return this.toEntity(record);
   }
 
+  async getByIdInternal(id: string): Promise<FormEntity | null> {
+    const record = await this.prismaService.forms.findFirst({
+      where: { id, isDeleted: false },
+      include: {
+        fields: {
+          where: { isDeleted: false },
+          orderBy: { order: 'asc' },
+          include: {
+            options: {
+              where: { isDeleted: false },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!record) return null;
+
+    return this.toEntity(record);
+  }
+
   async getByToken(token: string): Promise<FormEntity | null> {
     const record = await this.prismaService.forms.findFirst({
       where: { token, isDeleted: false },

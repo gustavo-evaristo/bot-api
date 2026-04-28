@@ -26,6 +26,7 @@ export class UpdateNodeController {
       content: body.content,
       defaultNextNodeId: body.defaultNextNodeId,
       kanbanStageId: body.kanbanStageId,
+      formId: body.formId,
       x: body.x,
       y: body.y,
       options: body.options,

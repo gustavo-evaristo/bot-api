@@ -34,6 +34,7 @@ export interface FlowNodeDetail {
   content: string;
   defaultNextNodeId: string | null;
   kanbanStageId: string | null;
+  formId: string | null;
   x: number;
   y: number;
   options: NodeOptionDetail[];

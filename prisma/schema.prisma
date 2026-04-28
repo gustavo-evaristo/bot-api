@@ -52,6 +52,8 @@ model flow_nodes {
   flow              flows          @relation(fields: [flowId], references: [id])
   kanbanStageId     String?
   kanbanStage       kanban_stages? @relation(fields: [kanbanStageId], references: [id])
+  formId            String?
+  form              forms?         @relation(fields: [formId], references: [id])
   isDeleted         Boolean        @default(false)
   type              String
   content           String
@@ -195,6 +197,7 @@ model forms {
   updatedAt   DateTime         @updatedAt
   fields      form_fields[]
   responses   form_responses[]
+  flowNodes   flow_nodes[]
 }
 
 model form_fields {

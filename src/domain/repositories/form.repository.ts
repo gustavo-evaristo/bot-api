@@ -20,6 +20,7 @@ export interface FormResponseDetail {
 export abstract class IFormRepository {
   abstract create(form: FormEntity): Promise<void>;
   abstract get(id: string, userId: string): Promise<FormEntity | null>;
+  abstract getByIdInternal(id: string): Promise<FormEntity | null>;
   abstract getByToken(token: string): Promise<FormEntity | null>;
   abstract update(form: FormEntity): Promise<void>;
   abstract findManyByUserId(userId: string): Promise<FormWithCount[]>;

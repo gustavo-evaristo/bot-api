@@ -4,6 +4,7 @@ import { IFlowRepository } from 'src/domain/repositories/flow.repository';
 import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
 import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
 import { ILeadResponseRepository } from 'src/domain/repositories/lead-response.repository';
+import { IFormRepository } from 'src/domain/repositories/form.repository';
 import { ConversationEntity } from 'src/domain/entities/conversation.entity';
 import { ConversationProgressEntity } from 'src/domain/entities/conversation-progress.entity';
 import { LeadResponseEntity } from 'src/domain/entities/lead-response.entity';
@@ -32,6 +33,7 @@ export class ProcessMessageUseCase {
     private readonly conversationRepository: IConversationRepository,
     private readonly conversationProgressRepository: IConversationProgressRepository,
     private readonly leadResponseRepository: ILeadResponseRepository,
+    private readonly formRepository: IFormRepository,
   ) {}
 
   async execute({
@@ -119,6 +121,7 @@ export class ProcessMessageUseCase {
         nodeMap,
         conversation,
         userId,
+        leadPhoneNumber,
       );
     }
 
@@ -207,6 +210,7 @@ export class ProcessMessageUseCase {
       nodeMap,
       conversation,
       userId,
+      leadPhoneNumber,
     );
   }
 
@@ -215,6 +219,7 @@ export class ProcessMessageUseCase {
     nodeMap: Map<string, FlowNodeDetail>,
     conversation: ConversationEntity,
     userId: string,
+    leadPhoneNumber?: string,
   ): Promise<Output> {
     const messagesToSend: string[] = [];
 
@@ -242,7 +247,20 @@ export class ProcessMessageUseCase {
         break;
       }
 
-      if (currentNode.type === NodeType.TEXT) {
+      if (currentNode.type === NodeType.FORM) {
+        const formMessage = await this.buildFormMessage(currentNode, leadPhoneNumber);
+        messagesToSend.push(formMessage);
+
+        if (!currentNode.defaultNextNodeId) {
+          conversation.finish();
+          await this.conversationRepository.update(conversation);
+          await this.conversationProgressRepository.update(progress);
+          break;
+        }
+
+        progress.advanceTo(currentNode.defaultNextNodeId);
+        await this.conversationProgressRepository.update(progress);
+      } else if (currentNode.type === NodeType.TEXT) {
         messagesToSend.push(currentNode.content);
 
         if (!currentNode.defaultNextNodeId) {
@@ -281,6 +299,30 @@ export class ProcessMessageUseCase {
       userId,
       messagesToSend,
     };
+  }
+
+  private async buildFormMessage(node: FlowNodeDetail, leadPhone: string): Promise<string> {
+    this.logger.log(`[FORM] nodeId=${node.id} formId=${node.formId} leadPhone=${leadPhone}`);
+
+    if (!node.formId) {
+      this.logger.warn(`[FORM] formId is null — sending content only`);
+      return node.content;
+    }
+
+    const form = await this.formRepository.getByIdInternal(node.formId);
+    this.logger.log(`[FORM] form found: ${form ? form.id : 'NOT FOUND'} token=${form?.token}`);
+
+    if (!form) return node.content;
+
+    const params = new URLSearchParams({ phone: leadPhone });
+    if (node.kanbanStageId) params.set('stageId', node.kanbanStageId);
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const link = `${frontendUrl}/f/${form.token}?${params.toString()}`;
+
+    this.logger.log(`[FORM] link gerado: ${link}`);
+
+    return `${node.content}\n\n${link}`;
   }
 
   private buildNodeMap(

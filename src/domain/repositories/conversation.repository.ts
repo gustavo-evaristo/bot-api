@@ -54,4 +54,8 @@ export abstract class IConversationRepository {
     flowId: string,
     leadPhoneNumber: string,
   ): Promise<ConversationEntity | null>;
+  abstract findByLeadPhone(
+    userId: string,
+    leadPhoneNumber: string,
+  ): Promise<ConversationEntity | null>;
 }

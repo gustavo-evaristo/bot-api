@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IFormRepository } from 'src/domain/repositories/form.repository';
+import { IConversationRepository } from 'src/domain/repositories/conversation.repository';
+import { IConversationProgressRepository } from 'src/domain/repositories/conversation-progress.repository';
 
 interface AnswerInput {
   fieldId: string;
@@ -9,13 +11,19 @@ interface AnswerInput {
 interface Input {
   token: string;
   answers: AnswerInput[];
+  leadPhone?: string;
+  kanbanStageId?: string;
 }
 
 @Injectable()
 export class SubmitFormResponseUseCase {
-  constructor(private readonly formRepository: IFormRepository) {}
+  constructor(
+    private readonly formRepository: IFormRepository,
+    private readonly conversationRepository: IConversationRepository,
+    private readonly conversationProgressRepository: IConversationProgressRepository,
+  ) {}
 
-  async execute({ token, answers }: Input): Promise<void> {
+  async execute({ token, answers, leadPhone, kanbanStageId }: Input): Promise<void> {
     const form = await this.formRepository.getByToken(token);
 
     if (!form) {
@@ -28,5 +36,23 @@ export class SubmitFormResponseUseCase {
     }));
 
     await this.formRepository.saveResponse(form.id.toString(), normalizedAnswers);
+
+    if (leadPhone && kanbanStageId) {
+      const conversation = await this.conversationRepository.findByLeadPhone(
+        form.userId.toString(),
+        leadPhone,
+      );
+
+      if (conversation) {
+        const progress = await this.conversationProgressRepository.findByConversationId(
+          conversation.id.toString(),
+        );
+
+        if (progress) {
+          progress.recordKanbanStage(kanbanStageId);
+          await this.conversationProgressRepository.update(progress);
+        }
+      }
+    }
   }
 }
