@@ -25,3 +25,4 @@ export * from './form/delete-form.use-case';
 export * from './form/get-public-form.use-case';
 export * from './form/submit-form-response.use-case';
 export * from './form/list-form-responses.use-case';
+export * from './form/delete-form-response.use-case';

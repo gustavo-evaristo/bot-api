@@ -34,4 +34,5 @@ export abstract class IFormRepository {
     formId: string,
     userId: string,
   ): Promise<FormResponseDetail[]>;
+  abstract deleteResponse(responseId: string): Promise<void>;
 }

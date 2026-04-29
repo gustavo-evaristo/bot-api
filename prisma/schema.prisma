@@ -235,6 +235,7 @@ model form_responses {
   id        String         @id @default(uuid())
   formId    String
   form      forms          @relation(fields: [formId], references: [id])
+  isDeleted Boolean        @default(false)
   createdAt DateTime       @default(now())
   answers   form_answers[]
 }

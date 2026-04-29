@@ -226,7 +226,7 @@ export class FormRepository implements IFormRepository {
     if (!form) return [];
 
     const responses = await this.prismaService.form_responses.findMany({
-      where: { formId },
+      where: { formId, isDeleted: false },
       orderBy: { createdAt: 'desc' },
       include: {
         answers: {
@@ -251,6 +251,13 @@ export class FormRepository implements IFormRepository {
           value: a.value,
         })),
     }));
+  }
+
+  async deleteResponse(responseId: string): Promise<void> {
+    await this.prismaService.form_responses.update({
+      where: { id: responseId },
+      data: { isDeleted: true },
+    });
   }
 
   async saveResponse(

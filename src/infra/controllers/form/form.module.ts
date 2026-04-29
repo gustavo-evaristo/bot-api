@@ -10,6 +10,7 @@ import {
   GetPublicFormUseCase,
   SubmitFormResponseUseCase,
   ListFormResponsesUseCase,
+  DeleteFormResponseUseCase,
 } from 'src/domain/use-cases';
 import { CreateFormController } from './create-form.controller';
 import { ListFormsController } from './list-forms.controller';
@@ -19,6 +20,7 @@ import { DeleteFormController } from './delete-form.controller';
 import { GetPublicFormController } from './get-public-form.controller';
 import { SubmitFormResponseController } from './submit-form-response.controller';
 import { ListFormResponsesController } from './list-form-responses.controller';
+import { DeleteFormResponseController } from './delete-form-response.controller';
 
 @Module({
   providers: [
@@ -30,6 +32,7 @@ import { ListFormResponsesController } from './list-form-responses.controller';
     GetPublicFormUseCase,
     SubmitFormResponseUseCase,
     ListFormResponsesUseCase,
+    DeleteFormResponseUseCase,
   ],
   controllers: [
     CreateFormController,
@@ -40,6 +43,7 @@ import { ListFormResponsesController } from './list-form-responses.controller';
     GetPublicFormController,
     SubmitFormResponseController,
     ListFormResponsesController,
+    DeleteFormResponseController,
   ],
   imports: [DatabaseModule, AuthenticationModule],
 })
