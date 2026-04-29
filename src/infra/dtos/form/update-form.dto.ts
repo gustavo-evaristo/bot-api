@@ -19,6 +19,7 @@ const FIELD_TYPES = [
   'PHONE',
   'NUMBER',
   'CPF',
+  'DATE',
   'ADDRESS',
   'REFERENCE',
   'MULTIPLE_CHOICE',

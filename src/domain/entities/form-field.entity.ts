@@ -9,6 +9,7 @@ export type FormFieldType =
   | 'PHONE'
   | 'NUMBER'
   | 'CPF'
+  | 'DATE'
   | 'ADDRESS'
   | 'REFERENCE'
   | 'MULTIPLE_CHOICE'
