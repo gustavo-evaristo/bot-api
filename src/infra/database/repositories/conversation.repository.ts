@@ -30,6 +30,13 @@ export class ConversationRepository implements IConversationRepository {
     });
   }
 
+  async delete(id: string): Promise<void> {
+    await this.prismaService.conversations.update({
+      where: { id },
+      data: { isDeleted: true, updatedAt: new Date() },
+    });
+  }
+
   async findActive(
     flowId: string,
     leadPhoneNumber: string,
@@ -39,6 +46,7 @@ export class ConversationRepository implements IConversationRepository {
         flowId,
         leadPhoneNumber,
         status: ConversationStatus.ACTIVE,
+        isDeleted: false,
       },
     });
 
@@ -109,6 +117,7 @@ export class ConversationRepository implements IConversationRepository {
         ) mh ON true
         WHERE k."userId" = ${userId}
           AND k."isDeleted" = false
+          AND c."isDeleted" = false
         ORDER BY c."leadPhoneNumber", c."flowId", c."updatedAt" DESC
       ) latest
       ORDER BY COALESCE(latest."lastMessageSentAt", latest."updatedAt") DESC
@@ -186,6 +195,7 @@ export class ConversationRepository implements IConversationRepository {
         JOIN flows k ON k.id = c."flowId"
         WHERE k."userId" = ${userId}
           AND k."isDeleted" = false
+          AND c."isDeleted" = false
         ORDER BY c."leadPhoneNumber", c."flowId", c."updatedAt" DESC
       ) leads
       ORDER BY leads."createdAt" DESC
@@ -199,7 +209,7 @@ export class ConversationRepository implements IConversationRepository {
     leadPhoneNumber: string,
   ): Promise<ConversationEntity | null> {
     const r = await this.prismaService.conversations.findFirst({
-      where: { flowId, leadPhoneNumber, status: ConversationStatus.FINISHED },
+      where: { flowId, leadPhoneNumber, status: ConversationStatus.FINISHED, isDeleted: false },
       orderBy: { updatedAt: 'desc' },
     });
 
@@ -231,6 +241,7 @@ export class ConversationRepository implements IConversationRepository {
     const r = await this.prismaService.conversations.findFirst({
       where: {
         leadPhoneNumber,
+        isDeleted: false,
         flow: { userId, isDeleted: false },
       },
       orderBy: { updatedAt: 'desc' },

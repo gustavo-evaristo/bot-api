@@ -121,7 +121,7 @@ export class FormRepository implements IFormRepository {
             },
           },
         },
-        _count: { select: { responses: true } },
+        _count: { select: { responses: { where: { isDeleted: false } } } },
       },
     });
 

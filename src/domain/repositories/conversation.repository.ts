@@ -38,6 +38,7 @@ export interface ConversationDetail {
 
 export abstract class IConversationRepository {
   abstract create(conversation: ConversationEntity): Promise<void>;
+  abstract delete(id: string): Promise<void>;
   abstract findActive(
     flowId: string,
     leadPhoneNumber: string,

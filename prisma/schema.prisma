@@ -92,6 +92,7 @@ model conversations {
   leadName          String?
   status            String                  @default("ACTIVE")
   automationEnabled Boolean                 @default(true)
+  isDeleted         Boolean                 @default(false)
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
   progress          conversation_progress?

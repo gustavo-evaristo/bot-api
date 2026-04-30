@@ -12,6 +12,7 @@ type ConversationEntityProps = {
   leadName?: string | null;
   status?: ConversationStatus | string | null;
   automationEnabled?: boolean | null;
+  isDeleted?: boolean | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 };
@@ -23,6 +24,7 @@ export class ConversationEntity {
   leadName: string | null;
   status: ConversationStatus;
   automationEnabled: boolean;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 
@@ -46,6 +48,7 @@ export class ConversationEntity {
     this.status =
       (props.status as ConversationStatus) ?? ConversationStatus.ACTIVE;
     this.automationEnabled = props.automationEnabled ?? true;
+    this.isDeleted = props.isDeleted ?? false;
 
     const createdAt = props.createdAt || new Date();
     this.createdAt = createdAt;
@@ -58,6 +61,11 @@ export class ConversationEntity {
 
   finish() {
     this.status = ConversationStatus.FINISHED;
+    this.touch();
+  }
+
+  delete() {
+    this.isDeleted = true;
     this.touch();
   }
 

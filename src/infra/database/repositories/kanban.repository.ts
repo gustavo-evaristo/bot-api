@@ -87,6 +87,7 @@ export class KanbanRepository implements IKanbanRepository {
         AND f."isDeleted" = false
       JOIN conversation_progress cp ON cp."conversationId" = c.id
         AND cp."lastKanbanStageId" IS NOT NULL
+      WHERE c."isDeleted" = false
       ORDER BY c."leadPhoneNumber", c."updatedAt" DESC
     `;
 
