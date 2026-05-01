@@ -6,4 +6,6 @@ export * from './conversation.repository';
 export * from './conversation-progress.repository';
 export * from './lead-response.repository';
 export * from './analytics.repository';
+export * from './analytics-v2.repository';
+export * from './whatsapp-status.repository';
 export * from './form.repository';

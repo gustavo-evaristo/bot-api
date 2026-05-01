@@ -20,6 +20,8 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import { MessageHistoryRepository } from './repositories/message-history.repository';
 import { IAnalyticsRepository } from 'src/domain/repositories/analytics.repository';
 import { AnalyticsRepository } from './repositories/analytics.repository';
+import { IAnalyticsV2Repository } from 'src/domain/repositories/analytics-v2.repository';
+import { AnalyticsV2Repository } from './repositories/analytics-v2.repository';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
 import { WhatsAppSessionRepository } from './repositories/whatsapp-session.repository';
 import { IFormRepository } from 'src/domain/repositories/form.repository';
@@ -71,6 +73,10 @@ import { QuickReplyRepository } from './repositories/quick-reply.repository';
       useClass: AnalyticsRepository,
     },
     {
+      provide: IAnalyticsV2Repository,
+      useClass: AnalyticsV2Repository,
+    },
+    {
       provide: IWhatsAppSessionRepository,
       useClass: WhatsAppSessionRepository,
     },
@@ -102,6 +108,7 @@ import { QuickReplyRepository } from './repositories/quick-reply.repository';
     ILeadResponseRepository,
     IMessageHistoryRepository,
     IAnalyticsRepository,
+    IAnalyticsV2Repository,
     IWhatsAppSessionRepository,
     IFormRepository,
     IKanbanRepository,

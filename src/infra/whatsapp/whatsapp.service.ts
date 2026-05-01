@@ -35,6 +35,15 @@ export class WhatsappService {
   }
 
   async startAllSessions(): Promise<void> {
+    // Reset all rows to DISCONNECTED before opening sockets. If a previous
+    // leader died without stepping down, its CONNECTED row would otherwise
+    // mislead the dashboard until the next event.
+    await this.sessionRepository
+      .markAllDisconnected()
+      .catch((err) =>
+        this.logger.error('Falha ao resetar status de sessões:', err),
+      );
+
     const userIds = await this.sessionRepository.findAllUserIds();
     if (userIds.length === 0) return;
 
@@ -61,6 +70,13 @@ export class WhatsappService {
     this.sessions.clear();
     this.stores.clear();
     this.pendingSessions.clear();
+    // After stepping down we no longer hold any socket. Mark all rows as
+    // DISCONNECTED so the new leader (or readers) see consistent state.
+    await this.sessionRepository
+      .markAllDisconnected()
+      .catch((err) =>
+        this.logger.error('Falha ao resetar status no shutdown:', err),
+      );
   }
 
   async startSession(userId: string): Promise<void> {
@@ -134,19 +150,46 @@ export class WhatsappService {
         if (qr) {
           const qrImage = await QRCode.toDataURL(qr);
           this.gateway.sendQrToUser(userId, qrImage);
+          await this.sessionRepository
+            .setConnectionStatus(userId, 'PENDING', null)
+            .catch((err) =>
+              this.logger.error(
+                `Falha ao persistir status PENDING para ${userId}:`,
+                err,
+              ),
+            );
         }
 
         if (connection === 'open') {
-          const phone = sock.user?.id?.split(':')[0]?.split('@')[0];
+          const rawPhone = sock.user?.id?.split(':')[0]?.split('@')[0];
+          const phone = rawPhone
+            ? this.normalizeBrazilianPhone('+' + rawPhone)
+            : null;
           this.logger.log(
             `WhatsApp conectado! Número: ${phone} (userId: ${userId})`,
           );
           this.gateway.sendStatusToUser(userId, 'CONNECTED');
+          await this.sessionRepository
+            .setConnectionStatus(userId, 'CONNECTED', phone)
+            .catch((err) =>
+              this.logger.error(
+                `Falha ao persistir status CONNECTED para ${userId}:`,
+                err,
+              ),
+            );
         }
 
         if (connection === 'close') {
           this.sessions.delete(userId);
           this.gateway.sendStatusToUser(userId, 'DISCONNECTED');
+          await this.sessionRepository
+            .setConnectionStatus(userId, 'DISCONNECTED', null)
+            .catch((err) =>
+              this.logger.error(
+                `Falha ao persistir status DISCONNECTED para ${userId}:`,
+                err,
+              ),
+            );
 
           const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
           const loggedOut = statusCode === DisconnectReason.loggedOut;

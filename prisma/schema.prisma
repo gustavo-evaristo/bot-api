@@ -135,12 +135,17 @@ model lead_responses {
 }
 
 model whatsapp_sessions {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  creds     String?
-  keys      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  creds            String?
+  keys             String?
+  // Status compartilhado entre instâncias. Apenas o leader (LeaderElectionService)
+  // escreve aqui via WhatsappService.connection.update handlers.
+  connectionStatus String    @default("DISCONNECTED")
+  connectedPhone   String?
+  lastSeenAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model instance_lock {

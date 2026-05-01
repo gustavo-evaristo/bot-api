@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
+import {
+  IWhatsAppSessionRepository,
+  WhatsappConnectionInfo,
+  WhatsappConnectionStatus,
+} from 'src/domain/repositories/whatsapp-session.repository';
 import { WhatsAppSessionEntity } from 'src/domain/entities/whatsapp-session.entity';
 import { UUID } from 'src/domain/entities/vos';
 import { PrismaService } from '../prisma.service';
@@ -49,5 +53,48 @@ export class WhatsAppSessionRepository implements IWhatsAppSessionRepository {
       select: { userId: true },
     });
     return records.map((r) => r.userId);
+  }
+
+  async setConnectionStatus(
+    userId: string,
+    status: WhatsappConnectionStatus,
+    connectedPhone: string | null,
+  ): Promise<void> {
+    await this.prisma.whatsapp_sessions.update({
+      where: { userId },
+      data: {
+        connectionStatus: status,
+        connectedPhone,
+        lastSeenAt: new Date(),
+      },
+    });
+  }
+
+  async markAllDisconnected(): Promise<void> {
+    await this.prisma.whatsapp_sessions.updateMany({
+      data: {
+        connectionStatus: 'DISCONNECTED',
+        connectedPhone: null,
+      },
+    });
+  }
+
+  async getConnectionInfo(
+    userId: string,
+  ): Promise<WhatsappConnectionInfo | null> {
+    const record = await this.prisma.whatsapp_sessions.findUnique({
+      where: { userId },
+      select: {
+        connectionStatus: true,
+        connectedPhone: true,
+        lastSeenAt: true,
+      },
+    });
+    if (!record) return null;
+    return {
+      status: record.connectionStatus as WhatsappConnectionStatus,
+      connectedPhone: record.connectedPhone,
+      lastSeenAt: record.lastSeenAt,
+    };
   }
 }

@@ -8,6 +8,8 @@ import { ProcessMessageUseCase } from 'src/domain/use-cases/flow-engine/process-
 import { AuthenticationModule } from '../authentication/authentication.module';
 import { FollowUpService } from './follow-up.service';
 import { LeaderElectionService } from './leader-election.service';
+import { IWhatsappStatusRepository } from 'src/domain/repositories/whatsapp-status.repository';
+import { WhatsappStatusRepository } from './whatsapp-status.repository';
 
 @Module({
   imports: [ScheduleModule.forRoot(), DatabaseModule, AuthenticationModule],
@@ -17,8 +19,12 @@ import { LeaderElectionService } from './leader-election.service';
     ProcessMessageUseCase,
     FollowUpService,
     LeaderElectionService,
+    {
+      provide: IWhatsappStatusRepository,
+      useClass: WhatsappStatusRepository,
+    },
   ],
   controllers: [WhatsappController],
-  exports: [WhatsappService],
+  exports: [WhatsappService, IWhatsappStatusRepository],
 })
 export class WhatsappModule {}
