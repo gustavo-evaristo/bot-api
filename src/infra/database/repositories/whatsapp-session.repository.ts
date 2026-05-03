@@ -60,7 +60,10 @@ export class WhatsAppSessionRepository implements IWhatsAppSessionRepository {
     status: WhatsappConnectionStatus,
     connectedPhone: string | null,
   ): Promise<void> {
-    await this.prisma.whatsapp_sessions.update({
+    // Usa updateMany pra não estourar quando a linha ainda não existe — pode
+    // acontecer numa troca de número (forceResetSession deleta a sessão e o
+    // baileys emite QR antes do primeiro creds.update recriar a linha).
+    await this.prisma.whatsapp_sessions.updateMany({
       where: { userId },
       data: {
         connectionStatus: status,
