@@ -7,6 +7,7 @@ export * from './flow/desactive-flow.use-case';
 export * from './flow/list-flows.use-case';
 export * from './flow/get-flow.use-case';
 export * from './flow/set-flow-start-node.use-case';
+export * from './flow/duplicate-flow.use-case';
 export * from './user/create-user.use-case';
 export * from './user/get-profile.use-case';
 export * from './user/login.use-case';

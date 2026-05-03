@@ -14,12 +14,24 @@ export abstract class ListFlowsResponse {
   @ApiPropertyOptional({ example: 'Fluxo de atendimento inicial ao lead' })
   description: string | null;
 
-  @ApiProperty({ example: '+5511999999999' })
-  phoneNumber: string;
+  @ApiPropertyOptional({ example: '+5511999999999', nullable: true })
+  phoneNumber: string | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  kanbanId: string | null;
+
+  @ApiPropertyOptional({ example: 'Captação de revendedoras', nullable: true })
+  kanbanTitle: string | null;
+
+  @ApiProperty({ example: 6 })
+  leadsCount: number;
+
+  @ApiProperty({ example: 234 })
+  messagesCount: number;
 
   @ApiProperty({ example: new Date() })
   createdAt: Date;
 
-  @ApiPropertyOptional({ example: null, nullable: true })
-  kanbanId: string | null;
+  @ApiProperty({ example: new Date() })
+  updatedAt: Date;
 }

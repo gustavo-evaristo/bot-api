@@ -7,6 +7,7 @@ import {
   CreateFlowUseCase,
   DeleteFlowUseCase,
   DesactiveFlowUseCase,
+  DuplicateFlowUseCase,
   GetFlowUseCase,
   ListFlowsUseCase,
   SetFlowStartNodeUseCase,
@@ -21,6 +22,7 @@ import { DesactiveFlowController } from './desactive-flow.controller';
 import { UpdateFlowPhoneNumberController } from './update-flow-phone-number.controller';
 import { SetFlowStartNodeController } from './set-flow-start-node.controller';
 import { DeleteFlowController } from './delete-flow.controller';
+import { DuplicateFlowController } from './duplicate-flow.controller';
 
 @Module({
   providers: [
@@ -33,6 +35,7 @@ import { DeleteFlowController } from './delete-flow.controller';
     UpdateFlowPhoneNumberUseCase,
     SetFlowStartNodeUseCase,
     DeleteFlowUseCase,
+    DuplicateFlowUseCase,
   ],
   controllers: [
     CreateFlowController,
@@ -44,6 +47,7 @@ import { DeleteFlowController } from './delete-flow.controller';
     UpdateFlowPhoneNumberController,
     SetFlowStartNodeController,
     DeleteFlowController,
+    DuplicateFlowController,
   ],
   imports: [DatabaseModule, AuthenticationModule],
 })

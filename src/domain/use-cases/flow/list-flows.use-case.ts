@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { FlowEntity } from 'src/domain/entities/flow.entity';
-import { IFlowRepository, IUserRepository } from 'src/domain/repositories';
+import {
+  FlowListItem,
+  IFlowRepository,
+  IUserRepository,
+} from 'src/domain/repositories';
 
 @Injectable()
 export class ListFlowsUseCase {
@@ -9,13 +12,13 @@ export class ListFlowsUseCase {
     private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(userId: string): Promise<FlowEntity[]> {
+  async execute(userId: string): Promise<FlowListItem[]> {
     const user = await this.userRepository.get(userId);
 
     if (!user) {
       throw new Error('User not found');
     }
 
-    return this.flowRepository.findManyByUserId(userId);
+    return this.flowRepository.findManyByUserIdWithStats(userId);
   }
 }
