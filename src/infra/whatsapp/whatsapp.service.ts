@@ -248,6 +248,14 @@ export class WhatsappService {
             return;
           }
           this.sessions.delete(userId);
+
+          // Captura o número que estava pareado ANTES de zerar o status,
+          // pra desativar os fluxos que dependiam dessa sessão.
+          const previouslyConnected = await this.sessionRepository
+            .getConnectionInfo(userId)
+            .then((info) => info?.connectedPhone ?? null)
+            .catch(() => null);
+
           this.gateway.sendStatusToUser(userId, 'DISCONNECTED');
           await this.sessionRepository
             .setConnectionStatus(userId, 'DISCONNECTED', null)
@@ -257,6 +265,24 @@ export class WhatsappService {
                 err,
               ),
             );
+
+          if (previouslyConnected) {
+            await this.flowRepository
+              .deactivateActiveByUserAndPhone(userId, previouslyConnected)
+              .then((count) => {
+                if (count > 0) {
+                  this.logger.log(
+                    `${count} fluxo(s) desativado(s) para ${userId} (número ${previouslyConnected} desconectado).`,
+                  );
+                }
+              })
+              .catch((err) =>
+                this.logger.error(
+                  `Falha ao desativar fluxos para ${userId}:`,
+                  err,
+                ),
+              );
+          }
 
           const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
           const loggedOut = statusCode === DisconnectReason.loggedOut;
@@ -309,6 +335,13 @@ export class WhatsappService {
     userId: string,
     sock: WASocket,
   ): Promise<void> {
+    // Captura o número paired antes de derrubar tudo — usado pra desativar
+    // os fluxos que dependiam dessa sessão.
+    const rawPhone = sock.user?.id?.split(':')[0]?.split('@')[0];
+    const previousPhone = rawPhone
+      ? this.normalizeBrazilianPhone('+' + rawPhone)
+      : null;
+
     // Tira do mapa ANTES do logout pra que o handler de close (que checa
     // identidade) trate isso como sessão antiga e não dispare reconexão.
     this.sessions.delete(userId);
@@ -328,6 +361,24 @@ export class WhatsappService {
       .catch((err) =>
         this.logger.error(`Falha ao remover sessão ${userId}:`, err),
       );
+
+    if (previousPhone) {
+      await this.flowRepository
+        .deactivateActiveByUserAndPhone(userId, previousPhone)
+        .then((count) => {
+          if (count > 0) {
+            this.logger.log(
+              `${count} fluxo(s) desativado(s) para ${userId} ao trocar de número (saindo de ${previousPhone}).`,
+            );
+          }
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Falha ao desativar fluxos antigos de ${userId}:`,
+            err,
+          ),
+        );
+    }
   }
 
   async sendMessage(

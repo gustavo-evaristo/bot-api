@@ -57,11 +57,26 @@ export class GetFlowResponse {
   @ApiProperty({ example: randomUUID() })
   userId: string;
 
+  @ApiProperty({ example: true })
+  isActive: boolean;
+
+  @ApiPropertyOptional({ example: '+5511999999999', nullable: true })
+  phoneNumber: string | null;
+
   @ApiPropertyOptional({ example: randomUUID(), nullable: true })
   kanbanId: string | null;
 
+  @ApiPropertyOptional({ example: 'Captação de revendedoras', nullable: true })
+  kanbanTitle: string | null;
+
   @ApiPropertyOptional({ example: randomUUID(), nullable: true })
   startNodeId: string | null;
+
+  @ApiPropertyOptional({ example: 'CONNECTED', nullable: true })
+  whatsappStatus: string | null;
+
+  @ApiPropertyOptional({ example: '+5511999999999', nullable: true })
+  whatsappConnectedPhone: string | null;
 
   @ApiProperty({ type: FlowNodeResponse, isArray: true })
   nodes: FlowNodeResponse[];

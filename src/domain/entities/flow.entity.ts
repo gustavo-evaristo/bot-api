@@ -45,8 +45,15 @@ export interface FlowDetails {
   id: string;
   title: string;
   userId: string;
+  isActive: boolean;
+  phoneNumber: string | null;
   kanbanId: string | null;
+  kanbanTitle: string | null;
   startNodeId: string | null;
+  /** Status atual da sessão WhatsApp do usuário ('CONNECTED' / 'PENDING' / 'DISCONNECTED'). */
+  whatsappStatus: string | null;
+  /** Número efetivamente pareado no WhatsApp (pode diferir do phoneNumber do fluxo). */
+  whatsappConnectedPhone: string | null;
   nodes: FlowNodeDetail[];
 }
 

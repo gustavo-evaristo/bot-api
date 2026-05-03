@@ -32,6 +32,18 @@ export abstract class IFlowRepository {
     userId: string,
     phoneNumber: string,
   ): Promise<number>;
+
+  /**
+   * Desativa todos os fluxos do usuário (isActive=true) com o phoneNumber
+   * informado. Disparado quando a sessão WhatsApp pareada com esse número
+   * é desconectada (logout, replaced, etc.) — sem WhatsApp ativo, o fluxo
+   * não tem como receber/responder mensagens.
+   * Retorna a quantidade de fluxos desativados.
+   */
+  abstract deactivateActiveByUserAndPhone(
+    userId: string,
+    phoneNumber: string,
+  ): Promise<number>;
   /**
    * Deep-copy a flow with all nodes and options. Returns the new flow id.
    * The copy starts inactive, with no phone number, and the title gets a

@@ -136,9 +136,12 @@ export class FlowRepository implements IFlowRepository {
   }
 
   async getDetails(id: string): Promise<FlowDetails | null> {
+    // Carrega flow + nós + opções + título do kanban vinculado + sessão WhatsApp
+    // do usuário em uma única chamada (Prisma usa subqueries no mesmo round-trip).
     const flow = await this.prismaService.flows.findUnique({
       where: { id, isDeleted: false },
       include: {
+        kanban: { select: { title: true, isDeleted: true } },
         nodes: {
           where: { isDeleted: false },
           include: {
@@ -155,12 +158,25 @@ export class FlowRepository implements IFlowRepository {
       return null;
     }
 
+    const session = await this.prismaService.whatsapp_sessions.findUnique({
+      where: { userId: flow.userId },
+      select: { connectionStatus: true, connectedPhone: true },
+    });
+
+    const kanbanTitle =
+      flow.kanban && !flow.kanban.isDeleted ? flow.kanban.title : null;
+
     return {
       id: flow.id,
       title: flow.title,
       userId: flow.userId,
+      isActive: flow.isActive,
+      phoneNumber: flow.phoneNumber ?? null,
       kanbanId: flow.kanbanId ?? null,
+      kanbanTitle,
       startNodeId: flow.startNodeId ?? null,
+      whatsappStatus: session?.connectionStatus ?? null,
+      whatsappConnectedPhone: session?.connectedPhone ?? null,
       nodes: flow.nodes.map((node) => ({
         id: node.id,
         type: node.type,
@@ -195,6 +211,25 @@ export class FlowRepository implements IFlowRepository {
       },
       data: {
         isActive: true,
+        updatedAt: new Date(),
+      },
+    });
+    return result.count;
+  }
+
+  async deactivateActiveByUserAndPhone(
+    userId: string,
+    phoneNumber: string,
+  ): Promise<number> {
+    const result = await this.prismaService.flows.updateMany({
+      where: {
+        userId,
+        phoneNumber,
+        isActive: true,
+        isDeleted: false,
+      },
+      data: {
+        isActive: false,
         updatedAt: new Date(),
       },
     });
