@@ -23,6 +23,16 @@ export abstract class IFlowRepository {
   abstract getDetails(id: string): Promise<FlowDetails | null>;
   abstract findByPhoneNumber(phoneNumber: string): Promise<FlowEntity | null>;
   /**
+   * Ativa todos os fluxos do usuário que estão pendentes (isActive=false)
+   * com o phoneNumber informado. Disparado após o WhatsApp conectar para
+   * o número cadastrado durante a criação do fluxo.
+   * Retorna a quantidade de fluxos ativados.
+   */
+  abstract activatePendingByUserAndPhone(
+    userId: string,
+    phoneNumber: string,
+  ): Promise<number>;
+  /**
    * Deep-copy a flow with all nodes and options. Returns the new flow id.
    * The copy starts inactive, with no phone number, and the title gets a
    * "(cópia)" suffix.

@@ -7,6 +7,7 @@ interface Input {
   title: string;
   description?: string | null;
   kanbanId?: string | null;
+  phoneNumber?: string | null;
 }
 
 @Injectable()
@@ -16,7 +17,13 @@ export class CreateFlowUseCase {
     private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute({ title, description, kanbanId, userId }: Input): Promise<FlowEntity> {
+  async execute({
+    title,
+    description,
+    kanbanId,
+    phoneNumber,
+    userId,
+  }: Input): Promise<FlowEntity> {
     const user = await this.userRepository.get(userId);
 
     if (!user) {
@@ -28,6 +35,7 @@ export class CreateFlowUseCase {
       title,
       description,
       kanbanId,
+      phoneNumber,
     });
 
     await this.flowRepository.create(flow);

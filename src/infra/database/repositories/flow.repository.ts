@@ -182,6 +182,25 @@ export class FlowRepository implements IFlowRepository {
     };
   }
 
+  async activatePendingByUserAndPhone(
+    userId: string,
+    phoneNumber: string,
+  ): Promise<number> {
+    const result = await this.prismaService.flows.updateMany({
+      where: {
+        userId,
+        phoneNumber,
+        isActive: false,
+        isDeleted: false,
+      },
+      data: {
+        isActive: true,
+        updatedAt: new Date(),
+      },
+    });
+    return result.count;
+  }
+
   async findByPhoneNumber(phoneNumber: string): Promise<FlowEntity | null> {
     const flow = await this.prismaService.flows.findFirst({
       where: { phoneNumber, isActive: true, isDeleted: false },

@@ -16,4 +16,9 @@ export class CreateFlowDTO {
   @IsOptional()
   @ApiPropertyOptional({ example: null, nullable: true })
   kanbanId?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ example: '+5511999999999', nullable: true })
+  phoneNumber?: string | null;
 }

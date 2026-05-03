@@ -10,6 +10,7 @@ import {
 } from 'src/domain/entities/message-history.entity';
 import { UUID } from 'src/domain/entities/vos';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
+import { IFlowRepository } from 'src/domain/repositories/flow.repository';
 import { loadBaileys } from './baileys.loader';
 import { useWhatsAppAuthState } from './whatsapp-auth-state';
 
@@ -28,6 +29,7 @@ export class WhatsappService {
     private readonly processMessageUseCase: ProcessMessageUseCase,
     private readonly messageHistoryRepository: IMessageHistoryRepository,
     private readonly sessionRepository: IWhatsAppSessionRepository,
+    private readonly flowRepository: IFlowRepository,
   ) {}
 
   setLeaderMode(value: boolean) {
@@ -79,8 +81,51 @@ export class WhatsappService {
       );
   }
 
-  async startSession(userId: string): Promise<void> {
-    if (this.sessions.has(userId) || this.pendingSessions.has(userId)) {
+  async startSession(
+    userId: string,
+    targetPhoneNumber?: string | null,
+  ): Promise<void> {
+    const existingSock = this.sessions.get(userId);
+    if (existingSock) {
+      const rawCurrent = existingSock.user?.id?.split(':')[0]?.split('@')[0];
+      const currentPhone = rawCurrent
+        ? this.normalizeBrazilianPhone('+' + rawCurrent)
+        : null;
+      const desiredPhone = targetPhoneNumber
+        ? this.normalizeBrazilianPhone(targetPhoneNumber)
+        : null;
+
+      if (desiredPhone && currentPhone && currentPhone === desiredPhone) {
+        // Sessão já está pareada com o número desejado — re-emite CONNECTED
+        // pra UI que acabou de abrir um novo socket, e ativa fluxo pendente.
+        this.gateway.sendStatusToUser(userId, 'CONNECTED');
+        await this.flowRepository
+          .activatePendingByUserAndPhone(userId, currentPhone)
+          .catch((err) =>
+            this.logger.error(
+              `Falha ao ativar fluxo pendente (sessão existente) para ${userId}:`,
+              err,
+            ),
+          );
+        return;
+      }
+
+      if (desiredPhone && currentPhone && currentPhone !== desiredPhone) {
+        // Pareado com OUTRO número — desloga e segue pra parear o novo.
+        this.logger.log(
+          `Trocando número WhatsApp para ${userId}: ${currentPhone} → ${desiredPhone}.`,
+        );
+        await this.forceResetSession(userId, existingSock);
+      } else {
+        // Sem alvo informado: mantém o que está e re-emite status.
+        if (currentPhone) {
+          this.gateway.sendStatusToUser(userId, 'CONNECTED');
+        }
+        return;
+      }
+    }
+
+    if (this.pendingSessions.has(userId)) {
       return;
     }
 
@@ -177,9 +222,31 @@ export class WhatsappService {
                 err,
               ),
             );
+          if (phone) {
+            await this.flowRepository
+              .activatePendingByUserAndPhone(userId, phone)
+              .then((count) => {
+                if (count > 0) {
+                  this.logger.log(
+                    `${count} fluxo(s) ativado(s) para ${userId} no número ${phone}.`,
+                  );
+                }
+              })
+              .catch((err) =>
+                this.logger.error(
+                  `Falha ao ativar fluxo pendente para ${userId}:`,
+                  err,
+                ),
+              );
+          }
         }
 
         if (connection === 'close') {
+          // Se este socket já foi substituído por outro (ex.: forceResetSession
+          // que troca o número pareado), ignora pra não derrubar a nova sessão.
+          if (this.sessions.get(userId) !== sock) {
+            return;
+          }
           this.sessions.delete(userId);
           this.gateway.sendStatusToUser(userId, 'DISCONNECTED');
           await this.sessionRepository
@@ -236,6 +303,31 @@ export class WhatsappService {
         ).catch((err) => this.logger.error(`Erro ao processar mensagem:`, err));
       }
     });
+  }
+
+  private async forceResetSession(
+    userId: string,
+    sock: WASocket,
+  ): Promise<void> {
+    // Tira do mapa ANTES do logout pra que o handler de close (que checa
+    // identidade) trate isso como sessão antiga e não dispare reconexão.
+    this.sessions.delete(userId);
+    this.stores.delete(userId);
+
+    try {
+      await (sock as any).logout?.();
+    } catch (err) {
+      this.logger.warn(`Falha no logout WhatsApp de ${userId}:`, err);
+      try {
+        (sock as any).end?.(undefined);
+      } catch {}
+    }
+
+    await this.sessionRepository
+      .delete(userId)
+      .catch((err) =>
+        this.logger.error(`Falha ao remover sessão ${userId}:`, err),
+      );
   }
 
   async sendMessage(

@@ -23,13 +23,14 @@ export class CreateFlowController {
   @ApiBearerAuth()
   @Post()
   async createFlow(
-    @Body() { title, description, kanbanId }: CreateFlowDTO,
+    @Body() { title, description, kanbanId, phoneNumber }: CreateFlowDTO,
     @Req() { user }: IReq,
   ) {
     const flow = await this.createFlowUseCase.execute({
       title,
       description,
       kanbanId,
+      phoneNumber,
       userId: user.id,
     });
 
