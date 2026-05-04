@@ -36,6 +36,7 @@ export interface ConversationDetail {
   leadPhoneNumber: string;
   leadName: string | null;
   status: string;
+  automationEnabled: boolean;
   flowTitle: string;
   flowUserId: string;
   createdAt: Date;

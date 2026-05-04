@@ -37,9 +37,12 @@ export class SendMessageUseCase {
       throw new Error('Acesso negado.');
     }
 
-    if (conversation.status !== ConversationStatus.FINISHED) {
+    const canSend =
+      conversation.status === ConversationStatus.FINISHED ||
+      !conversation.automationEnabled;
+    if (!canSend) {
       throw new Error(
-        'Só é possível enviar mensagens para leads que finalizaram o fluxo.',
+        'Só é possível enviar mensagens manualmente quando o fluxo finalizou ou a automação está desligada.',
       );
     }
 

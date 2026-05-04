@@ -172,6 +172,7 @@ export class ConversationRepository implements IConversationRepository {
       leadPhoneNumber: r.leadPhoneNumber,
       leadName: r.leadName,
       status: r.status,
+      automationEnabled: r.automationEnabled,
       flowTitle: r.flow.title,
       flowUserId: r.flow.userId,
       createdAt: r.createdAt,
