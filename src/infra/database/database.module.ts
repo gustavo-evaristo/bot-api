@@ -32,6 +32,8 @@ import { IKanbanStageRepository } from 'src/domain/repositories/kanban-stage.rep
 import { KanbanStageRepository } from './repositories/kanban-stage.repository';
 import { IQuickReplyRepository } from 'src/domain/repositories/quick-reply.repository';
 import { QuickReplyRepository } from './repositories/quick-reply.repository';
+import { ICompanyRepository } from 'src/domain/repositories/company.repository';
+import { CompanyRepository } from './repositories/company.repository';
 
 @Module({
   providers: [
@@ -96,6 +98,10 @@ import { QuickReplyRepository } from './repositories/quick-reply.repository';
       provide: IQuickReplyRepository,
       useClass: QuickReplyRepository,
     },
+    {
+      provide: ICompanyRepository,
+      useClass: CompanyRepository,
+    },
   ],
   exports: [
     PrismaService,
@@ -114,6 +120,7 @@ import { QuickReplyRepository } from './repositories/quick-reply.repository';
     IKanbanRepository,
     IKanbanStageRepository,
     IQuickReplyRepository,
+    ICompanyRepository,
   ],
 })
 export class DatabaseModule {}

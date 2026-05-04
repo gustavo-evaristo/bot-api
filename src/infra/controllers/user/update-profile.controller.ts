@@ -1,21 +1,23 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Patch, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { GetProfileUseCase } from 'src/domain/use-cases';
+import { UpdateProfileUseCase } from 'src/domain/use-cases';
 import { JwtGuard } from '../../authentication/jwt.guard';
+import { UpdateProfileDTO } from '../../dtos/user/update-profile.dto';
 
 @ApiTags('Users')
 @Controller('users')
-export class GetProfileController {
-  constructor(private readonly getProfileUseCase: GetProfileUseCase) {}
+export class UpdateProfileController {
+  constructor(private readonly updateProfileUseCase: UpdateProfileUseCase) {}
 
-  @Get()
+  @Patch('me')
   @ApiBearerAuth()
   @UseGuards(JwtGuard)
-  @ApiOperation({ summary: 'Get user profile' })
-  async getProfile(@Req() { user }) {
-    const { user: data, company } = await this.getProfileUseCase.execute(
-      user.id,
-    );
+  @ApiOperation({ summary: 'Update logged user profile' })
+  async update(@Req() { user }, @Body() body: UpdateProfileDTO) {
+    const { user: data, company } = await this.updateProfileUseCase.execute({
+      userId: user.id,
+      ...body,
+    });
 
     return {
       id: data.id.toString(),

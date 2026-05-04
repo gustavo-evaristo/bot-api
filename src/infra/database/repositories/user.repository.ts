@@ -12,13 +12,37 @@ export class UserRepository implements IUserRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(user: UserEntity): Promise<void> {
-    const data = {
-      ...user,
-      id: user.id.toString(),
-      password: user.password.hash(),
-    };
+    await this.prismaService.users.create({
+      data: {
+        id: user.id.toString(),
+        isActive: user.isActive,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        password: user.password.hash(),
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        companyId: user.companyId.toString(),
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    });
+  }
 
-    await this.prismaService.users.create({ data });
+  async update(user: UserEntity): Promise<void> {
+    await this.prismaService.users.update({
+      where: { id: user.id.toString() },
+      data: {
+        isActive: user.isActive,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        password: user.password.hash(),
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        updatedAt: user.updatedAt,
+      },
+    });
   }
 
   async get(id: string): Promise<UserEntity | null> {

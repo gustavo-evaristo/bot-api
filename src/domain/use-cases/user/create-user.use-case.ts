@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { UserEntity } from '../../entities/user.entity';
+import { CompanyEntity } from '../../entities/company.entity';
 import { Password } from '../../entities/vos';
 import { IUserRepository } from '../../repositories/user.repository';
+import { ICompanyRepository } from '../../repositories/company.repository';
 import { JwtService } from '@nestjs/jwt';
 
 interface Input {
@@ -14,6 +16,7 @@ interface Input {
 
 interface Output {
   user: UserEntity;
+  company: CompanyEntity;
   token: string;
 }
 
@@ -21,6 +24,7 @@ interface Output {
 export class CreateUserUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
+    private readonly companyRepository: ICompanyRepository,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -45,11 +49,20 @@ export class CreateUserUseCase {
       throw new Error('User already exists');
     }
 
+    const baseName = name.trim() || 'Empresa';
+    const company = new CompanyEntity({
+      name: `${baseName} — Workspace`,
+    });
+
+    await this.companyRepository.create(company);
+
     const user = new UserEntity({
       name,
       email,
       phone,
       password: userPassword,
+      companyId: company.id,
+      role: 'ADMIN',
     });
 
     await this.userRepository.create(user);
@@ -58,6 +71,6 @@ export class CreateUserUseCase {
 
     const token = this.jwtService.sign(payload);
 
-    return { user, token };
+    return { user, company, token };
   }
 }

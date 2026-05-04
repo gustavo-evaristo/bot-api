@@ -12,4 +12,5 @@ export abstract class IUserRepository {
     input: FindByEmailOrPhoneInput,
   ): Promise<UserEntity | null>;
   abstract create(user: UserEntity): Promise<void>;
+  abstract update(user: UserEntity): Promise<void>;
 }

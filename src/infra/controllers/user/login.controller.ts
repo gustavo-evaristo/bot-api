@@ -14,14 +14,19 @@ export class LoginController {
   @ApiOkResponse({ type: LoginResponse })
   @ApiOperation({ summary: 'Login user' })
   async login(@Body() body: LoginDTO) {
-    const { user, token } = await this.loginUseCase.execute(body);
+    const { user, company, token } = await this.loginUseCase.execute(body);
 
     return {
       id: user.id.toString(),
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
       token,
+      company: company
+        ? { id: company.id.toString(), name: company.name }
+        : null,
     };
   }
 }

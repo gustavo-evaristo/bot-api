@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Password } from '../../entities/vos';
 import { IUserRepository } from '../../repositories/user.repository';
+import { ICompanyRepository } from '../../repositories/company.repository';
 import { UserEntity } from '../../entities/user.entity';
+import { CompanyEntity } from '../../entities/company.entity';
 import { JwtService } from '@nestjs/jwt';
 
 interface Output {
   user: UserEntity;
+  company: CompanyEntity | null;
   token: string;
 }
 
@@ -13,6 +16,7 @@ interface Output {
 export class LoginUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
+    private readonly companyRepository: ICompanyRepository,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -31,10 +35,12 @@ export class LoginUseCase {
       throw new Error('Invalid password');
     }
 
+    const company = await this.companyRepository.get(user.companyId.toString());
+
     const payload = { id: user.id.toString() };
 
     const token = this.jwtService.sign(payload);
 
-    return { user, token };
+    return { user, company, token };
   }
 }
