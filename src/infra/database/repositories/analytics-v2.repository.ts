@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import {
   AnalyticsV2Result,
   IAnalyticsV2Repository,
@@ -15,8 +16,19 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
     startDate: Date,
     endDate: Date,
     kanbanId?: string,
+    flowId?: string,
   ): Promise<AnalyticsV2Result> {
     const prisma = this.prismaService;
+
+    // Fragmento opcional aplicado em todas as queries que partem de `flows k`.
+    // Se um flowId for informado, restringe TODAS as métricas àquele fluxo.
+    // Pipeline kanban filtra via `c."flowId"` (conversations).
+    const flowFilterK = flowId
+      ? Prisma.sql`AND k.id = ${flowId}`
+      : Prisma.empty;
+    const flowFilterC = flowId
+      ? Prisma.sql`AND c."flowId" = ${flowId}`
+      : Prisma.empty;
 
     type BigIntRow = { count: bigint };
 
@@ -26,7 +38,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
       JOIN message_history mh ON mh."conversationId" = c.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND mh.sender = 'LEAD'
         AND mh."createdAt" >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
@@ -36,7 +48,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       SELECT COUNT(c.id)::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
     `;
@@ -46,7 +58,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       SELECT COUNT(c.id)::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."isDeleted" = false
         AND c.status = 'ACTIVE'
@@ -57,7 +69,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
       JOIN conversation_progress cp ON cp."conversationId" = c.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."isDeleted" = false
         AND c.status = 'ACTIVE'
@@ -78,7 +90,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
         )::bigint AS completed
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${startDate} AND ${endDate}
     `;
@@ -115,25 +127,29 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       JOIN flows k ON k.id = c."flowId"
       LEFT JOIN flow_nodes fn ON fn.id = lr."nodeId"
       LEFT JOIN kanban_stages ks ON ks.id = fn."postFillKanbanStageId"
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
       ORDER BY lr."createdAt" DESC
       LIMIT 10
     `;
 
-    // WhatsApp sessions por fluxo (placeholder de status — TODO: integrar com Baileys)
+    // WhatsApp sessions por fluxo. Carrega o flag isActive — fonte de verdade
+    // mantida pelo whatsapp.service: ativa em connection.update 'open' e
+    // desativa em 'close'. O use-case usa isso pra derivar o status final.
     type FlowSessionRow = {
       flowId: string;
       flowName: string;
       phone: string | null;
+      isActive: boolean;
     };
     const whatsappSessionRows = await prisma.$queryRaw<FlowSessionRow[]>`
       SELECT
         k.id AS "flowId",
         k.title AS "flowName",
-        k."phoneNumber" AS phone
+        k."phoneNumber" AS phone,
+        k."isActive" AS "isActive"
       FROM flows k
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
       ORDER BY k."createdAt" DESC
       LIMIT 6
@@ -149,7 +165,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
         COUNT(*)::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${sparkStart} AND ${sparkEnd}
       GROUP BY day
@@ -167,7 +183,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       SELECT COUNT(c.id)::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${prevStart} AND ${prevEnd}
     `;
@@ -217,7 +233,10 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
           COUNT(cp.id)::bigint AS count
         FROM kanban_stages ks
         LEFT JOIN conversation_progress cp ON cp."lastKanbanStageId" = ks.id
-        LEFT JOIN conversations c ON c.id = cp."conversationId" AND c."isDeleted" = false
+        LEFT JOIN conversations c
+          ON c.id = cp."conversationId"
+          AND c."isDeleted" = false
+          ${flowFilterC}
         WHERE ks."kanbanId" = ${pipelineKanban.id}
           AND ks."isDeleted" = false
         GROUP BY ks.id, ks.title, ks.color, ks."order"
@@ -234,7 +253,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
       JOIN message_history mh ON mh."conversationId" = c.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND mh."createdAt" BETWEEN ${startDate} AND ${endDate}
       GROUP BY hour
@@ -254,7 +273,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
         COUNT(*)::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${startDate} AND ${endDate}
       GROUP BY TO_CHAR(c."createdAt", 'DD/MM'), DATE_TRUNC('day', c."createdAt")
@@ -268,7 +287,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
       JOIN message_history mh ON mh."conversationId" = c.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND mh."createdAt" BETWEEN ${startDate} AND ${endDate}
       GROUP BY TO_CHAR(mh."createdAt", 'DD/MM'), DATE_TRUNC('day', mh."createdAt")
@@ -290,7 +309,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
         )::bigint AS completed
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${startDate} AND ${endDate}
       GROUP BY TO_CHAR(c."createdAt", 'DD/MM'), DATE_TRUNC('day', c."createdAt")
@@ -303,7 +322,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       SELECT c.status, COUNT(*)::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${startDate} AND ${endDate}
       GROUP BY c.status
@@ -327,7 +346,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       LEFT JOIN conversations c
         ON c."flowId" = k.id
         AND c."createdAt" BETWEEN ${startDate} AND ${endDate}
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
       GROUP BY k.id, k.title
       ORDER BY leads DESC
@@ -361,7 +380,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
         FROM message_history mh
         JOIN conversations c ON c.id = mh."conversationId"
         JOIN flows k ON k.id = c."flowId"
-        WHERE k."userId" = ${userId}
+        WHERE k."userId" = ${userId} ${flowFilterK}
           AND k."isDeleted" = false
           AND mh."createdAt" BETWEEN ${startDate} AND ${endDate}
       )
@@ -378,7 +397,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       SELECT COUNT(DISTINCT c."leadPhoneNumber")::bigint AS count
       FROM flows k
       JOIN conversations c ON c."flowId" = k.id
-      WHERE k."userId" = ${userId}
+      WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND c."createdAt" BETWEEN ${startDate} AND ${endDate}
     `;
@@ -399,11 +418,12 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
         timestamp: r.createdAt,
       })),
 
-      // Status preenchido pelo use-case com o phone conectado real do Baileys.
+      // Status preenchido pelo use-case usando flow.isActive como fonte de verdade.
       whatsappSessions: whatsappSessionRows.map((r) => ({
         flowId: r.flowId,
         flowName: r.flowName,
         phone: r.phone,
+        isActive: r.isActive,
         status: 'pending' as const,
       })),
 

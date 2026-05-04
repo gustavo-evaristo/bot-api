@@ -16,6 +16,7 @@ export interface WhatsappSessionItem {
   flowId: string;
   flowName: string;
   phone: string | null;
+  isActive: boolean;
   status: WhatsappSessionStatus;
 }
 
@@ -99,5 +100,6 @@ export abstract class IAnalyticsV2Repository {
     startDate: Date,
     endDate: Date,
     kanbanId?: string,
+    flowId?: string,
   ): Promise<AnalyticsV2Result>;
 }

@@ -12,4 +12,8 @@ export class GetAnalyticsV2QueryDto {
   @IsOptional()
   @IsUUID()
   kanbanId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  flowId?: string;
 }

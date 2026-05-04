@@ -31,6 +31,7 @@ export class GetAnalyticsV2Controller {
       startDate: query.startDate ? new Date(query.startDate) : undefined,
       endDate: query.endDate ? new Date(query.endDate) : undefined,
       kanbanId: query.kanbanId,
+      flowId: query.flowId,
     });
   }
 }
