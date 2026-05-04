@@ -8,7 +8,10 @@ export interface ConversationSummary {
   automationEnabled: boolean;
   flowId: string;
   flowTitle: string;
+  flowKanbanId: string | null;
+  kanbanStageId: string | null;
   kanbanStageName: string | null;
+  kanbanStageColor: string | null;
   lastMessage: { content: string; sender: string; sentAt: Date } | null;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +24,9 @@ export interface LeadSummary {
   status: string;
   flowId: string;
   flowTitle: string;
+  kanbanStageId: string | null;
+  kanbanStageName: string | null;
+  kanbanStageColor: string | null;
   createdAt: Date;
 }
 

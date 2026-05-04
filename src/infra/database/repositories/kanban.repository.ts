@@ -4,6 +4,7 @@ import { UUID } from 'src/domain/entities/vos';
 import {
   IKanbanRepository,
   KanbanBoardResult,
+  KanbanListItem,
 } from 'src/domain/repositories/kanban.repository';
 import { PrismaService } from '../prisma.service';
 
@@ -19,6 +20,66 @@ export class KanbanRepository implements IKanbanRepository {
     return rows.map(
       (r) => new KanbanEntity({ ...r, id: UUID.from(r.id), userId: UUID.from(r.userId) }),
     );
+  }
+
+  async listByUserIdWithStats(userId: string): Promise<KanbanListItem[]> {
+    type Row = {
+      id: string;
+      title: string;
+      description: string | null;
+      stagesCount: bigint;
+      activeLeadsCount: bigint;
+      linkedFlowTitle: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+
+    // Uma query: kanbans + count de stages + count de leads ativos via
+    // conversation_progress.lastKanbanStageId, e o título do primeiro fluxo
+    // que aponta pro kanban (mesmo padrão do listing de fluxos).
+    const rows = await this.prismaService.$queryRaw<Row[]>`
+      SELECT
+        k.id,
+        k.title,
+        k.description,
+        (
+          SELECT COUNT(*) FROM kanban_stages s
+          WHERE s."kanbanId" = k.id AND s."isDeleted" = false
+        )::bigint AS "stagesCount",
+        (
+          SELECT COUNT(DISTINCT cp."conversationId")
+          FROM conversation_progress cp
+          JOIN kanban_stages ks
+            ON ks.id = cp."lastKanbanStageId" AND ks."isDeleted" = false
+          JOIN conversations c ON c.id = cp."conversationId"
+          WHERE ks."kanbanId" = k.id
+            AND c."isDeleted" = false
+            AND c.status = 'ACTIVE'
+        )::bigint AS "activeLeadsCount",
+        (
+          SELECT f.title FROM flows f
+          WHERE f."kanbanId" = k.id AND f."isDeleted" = false
+          ORDER BY f."createdAt" ASC
+          LIMIT 1
+        ) AS "linkedFlowTitle",
+        k."createdAt",
+        k."updatedAt"
+      FROM kanbans k
+      WHERE k."userId" = ${userId}
+        AND k."isDeleted" = false
+      ORDER BY k."createdAt" DESC
+    `;
+
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      stagesCount: Number(r.stagesCount),
+      activeLeadsCount: Number(r.activeLeadsCount),
+      linkedFlowTitle: r.linkedFlowTitle,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
   }
 
   async getById(id: string): Promise<KanbanEntity | null> {

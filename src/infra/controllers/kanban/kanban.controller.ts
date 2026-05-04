@@ -42,21 +42,30 @@ export class KanbanController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'List kanbans' })
+  @ApiOperation({ summary: 'List kanbans with stats' })
   async list(@Req() { user }: IReq) {
     const kanbans = await this.listKanbans.execute({ userId: user.id });
     return kanbans.map((k) => ({
-      id: k.id.toString(),
+      id: k.id,
       title: k.title,
       description: k.description,
+      stagesCount: k.stagesCount,
+      activeLeadsCount: k.activeLeadsCount,
+      linkedFlowTitle: k.linkedFlowTitle,
       createdAt: k.createdAt,
+      updatedAt: k.updatedAt,
     }));
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create kanban' })
+  @ApiOperation({ summary: 'Create kanban with optional initial stages' })
   async create(@Body() body: CreateKanbanDto, @Req() { user }: IReq) {
-    return this.createKanban.execute({ userId: user.id, ...body });
+    return this.createKanban.execute({
+      userId: user.id,
+      title: body.title,
+      description: body.description,
+      stages: body.stages,
+    });
   }
 
   @Patch(':id')

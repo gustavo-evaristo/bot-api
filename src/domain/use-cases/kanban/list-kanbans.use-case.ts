@@ -10,6 +10,6 @@ export class ListKanbansUseCase {
   constructor(private readonly kanbanRepository: IKanbanRepository) {}
 
   async execute({ userId }: Input) {
-    return this.kanbanRepository.listByUserId(userId);
+    return this.kanbanRepository.listByUserIdWithStats(userId);
   }
 }

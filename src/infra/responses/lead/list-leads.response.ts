@@ -19,6 +19,15 @@ export class LeadItemResponse {
   @ApiProperty({ example: 'Fluxo de cadastro' })
   flowTitle: string;
 
+  @ApiProperty({ example: '3fa85f64-…', nullable: true })
+  kanbanStageId: string | null;
+
+  @ApiProperty({ example: 'Onboarding', nullable: true })
+  kanbanStageName: string | null;
+
+  @ApiProperty({ example: '#10b981', nullable: true })
+  kanbanStageColor: string | null;
+
   @ApiProperty({ example: new Date().toISOString() })
   createdAt: Date;
 }

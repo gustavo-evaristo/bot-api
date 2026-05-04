@@ -31,6 +31,21 @@ export class ConversationSummaryResponse {
   @ApiProperty({ example: 'Fluxo de cadastro de consultoras' })
   flowTitle: string;
 
+  @ApiProperty({ example: true })
+  automationEnabled: boolean;
+
+  @ApiProperty({ example: randomUUID(), nullable: true })
+  flowKanbanId: string | null;
+
+  @ApiProperty({ example: randomUUID(), nullable: true })
+  kanbanStageId: string | null;
+
+  @ApiProperty({ example: 'Onboarding', nullable: true })
+  kanbanStageName: string | null;
+
+  @ApiProperty({ example: '#10b981', nullable: true })
+  kanbanStageColor: string | null;
+
   @ApiProperty({ type: LastMessageResponse, nullable: true })
   lastMessage: LastMessageResponse | null;
 

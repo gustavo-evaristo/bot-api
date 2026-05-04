@@ -79,7 +79,10 @@ export class ConversationRepository implements IConversationRepository {
       automationEnabled: boolean;
       flowId: string;
       flowTitle: string;
+      flowKanbanId: string | null;
+      kanbanStageId: string | null;
       kanbanStageName: string | null;
+      kanbanStageColor: string | null;
       lastMessageContent: string | null;
       lastMessageSender: string | null;
       lastMessageSentAt: Date | null;
@@ -97,7 +100,10 @@ export class ConversationRepository implements IConversationRepository {
           c."automationEnabled",
           k.id           AS "flowId",
           k.title        AS "flowTitle",
+          k."kanbanId"   AS "flowKanbanId",
+          ks.id          AS "kanbanStageId",
           ks.title       AS "kanbanStageName",
+          ks.color       AS "kanbanStageColor",
           mh.content     AS "lastMessageContent",
           mh.sender      AS "lastMessageSender",
           mh."createdAt" AS "lastMessageSentAt",
@@ -131,7 +137,10 @@ export class ConversationRepository implements IConversationRepository {
       automationEnabled: r.automationEnabled,
       flowId: r.flowId,
       flowTitle: r.flowTitle,
+      flowKanbanId: r.flowKanbanId ?? null,
+      kanbanStageId: r.kanbanStageId ?? null,
       kanbanStageName: r.kanbanStageName ?? null,
+      kanbanStageColor: r.kanbanStageColor ?? null,
       lastMessage:
         r.lastMessageContent !== null &&
         r.lastMessageSender !== null &&
@@ -178,9 +187,14 @@ export class ConversationRepository implements IConversationRepository {
       status: string;
       flowId: string;
       flowTitle: string;
+      kanbanStageId: string | null;
+      kanbanStageName: string | null;
+      kanbanStageColor: string | null;
       createdAt: Date;
     };
 
+    // Em uma query: pega o último contato de cada (lead, fluxo) e já junta
+    // com o estágio kanban atual via conversation_progress.lastKanbanStageId.
     const rows = await this.prismaService.$queryRaw<Row[]>`
       SELECT * FROM (
         SELECT DISTINCT ON (c."leadPhoneNumber", c."flowId")
@@ -190,9 +204,16 @@ export class ConversationRepository implements IConversationRepository {
           c.status,
           k.id    AS "flowId",
           k.title AS "flowTitle",
+          ks.id    AS "kanbanStageId",
+          ks.title AS "kanbanStageName",
+          ks.color AS "kanbanStageColor",
           c."createdAt"
         FROM conversations c
         JOIN flows k ON k.id = c."flowId"
+        LEFT JOIN conversation_progress cp ON cp."conversationId" = c.id
+        LEFT JOIN kanban_stages ks
+          ON ks.id = cp."lastKanbanStageId"
+         AND ks."isDeleted" = false
         WHERE k."userId" = ${userId}
           AND k."isDeleted" = false
           AND c."isDeleted" = false

@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateKanbanDto {
   @ApiProperty({ example: 'Pipeline de Vendas' })
@@ -11,6 +17,19 @@ export class CreateKanbanDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({
+    example: ['Novo', 'Em contato', 'Proposta', 'Fechado'],
+    isArray: true,
+    type: String,
+    description:
+      'Estágios iniciais (em ordem). O backend cria todos atomicamente.',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMaxSize(20)
+  stages?: string[];
 }
 
 export class UpdateKanbanDto {
