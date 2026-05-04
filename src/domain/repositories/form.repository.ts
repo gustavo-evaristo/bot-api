@@ -2,6 +2,7 @@ import { FormEntity } from '../entities/form.entity';
 
 export interface FormWithCount extends FormEntity {
   responsesCount: number;
+  lastResponseAt: Date | null;
 }
 
 export interface FormAnswerDetail {

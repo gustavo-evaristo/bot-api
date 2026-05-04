@@ -1,6 +1,11 @@
 import { FormEntity } from 'src/domain/entities/form.entity';
 
-export function serializeForm(form: FormEntity & { responsesCount?: number }) {
+export function serializeForm(
+  form: FormEntity & {
+    responsesCount?: number;
+    lastResponseAt?: Date | null;
+  },
+) {
   return {
     id: form.id.toString(),
     title: form.title,
@@ -8,6 +13,7 @@ export function serializeForm(form: FormEntity & { responsesCount?: number }) {
     token: form.token,
     isActive: form.isActive,
     responsesCount: form.responsesCount ?? 0,
+    lastResponseAt: form.lastResponseAt ?? null,
     fields: form.fields.map((f) => ({
       id: f.id.toString(),
       type: f.type,

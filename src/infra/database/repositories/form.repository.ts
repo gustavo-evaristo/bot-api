@@ -107,6 +107,8 @@ export class FormRepository implements IFormRepository {
   }
 
   async findManyByUserId(userId: string): Promise<FormWithCount[]> {
+    // Em uma chamada: form + fields + options + count + última resposta.
+    // O `take: 1` na relação responses pega apenas o timestamp mais recente.
     const records = await this.prismaService.forms.findMany({
       where: { userId, isDeleted: false },
       orderBy: { createdAt: 'desc' },
@@ -122,12 +124,19 @@ export class FormRepository implements IFormRepository {
           },
         },
         _count: { select: { responses: { where: { isDeleted: false } } } },
+        responses: {
+          where: { isDeleted: false },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { createdAt: true },
+        },
       },
     });
 
     return records.map((r) => {
       const entity = this.toEntity(r) as FormWithCount;
       entity.responsesCount = r._count.responses;
+      entity.lastResponseAt = r.responses[0]?.createdAt ?? null;
       return entity;
     });
   }
