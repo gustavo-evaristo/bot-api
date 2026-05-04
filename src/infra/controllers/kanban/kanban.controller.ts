@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/infra/authentication/jwt.guard';
-import { CreateKanbanDto, UpdateKanbanDto, CreateKanbanStageDto, UpdateKanbanStageDto, MoveLeadStageDto } from 'src/infra/dtos/kanban/kanban.dto';
+import { CreateKanbanDto, UpdateKanbanDto, CreateKanbanStageDto, UpdateKanbanStageDto, MoveLeadStageDto, ReorderKanbanStagesDto } from 'src/infra/dtos/kanban/kanban.dto';
 import { CreateKanbanUseCase } from 'src/domain/use-cases/kanban/create-kanban.use-case';
 import { UpdateKanbanUseCase } from 'src/domain/use-cases/kanban/update-kanban.use-case';
 import { DeleteKanbanUseCase } from 'src/domain/use-cases/kanban/delete-kanban.use-case';
@@ -22,6 +22,7 @@ import { UpdateKanbanStageUseCase } from 'src/domain/use-cases/kanban/update-kan
 import { DeleteKanbanStageUseCase } from 'src/domain/use-cases/kanban/delete-kanban-stage.use-case';
 import { ListKanbanStagesUseCase } from 'src/domain/use-cases/kanban/list-kanban-stages.use-case';
 import { MoveLeadStageUseCase } from 'src/domain/use-cases/kanban/move-lead-stage.use-case';
+import { ReorderKanbanStagesUseCase } from 'src/domain/use-cases/kanban/reorder-kanban-stages.use-case';
 
 @ApiTags('Kanbans')
 @ApiBearerAuth()
@@ -39,6 +40,7 @@ export class KanbanController {
     private readonly deleteStage: DeleteKanbanStageUseCase,
     private readonly listStages: ListKanbanStagesUseCase,
     private readonly moveLeadStageUseCase: MoveLeadStageUseCase,
+    private readonly reorderStages: ReorderKanbanStagesUseCase,
   ) {}
 
   @Get()
@@ -109,6 +111,21 @@ export class KanbanController {
     @Req() { user }: IReq,
   ) {
     return this.createStage.execute({ userId: user.id, kanbanId: id, ...body });
+  }
+
+  @Patch(':id/stages/reorder')
+  @ApiOperation({ summary: 'Reorder kanban stages' })
+  async reorderStagesHandler(
+    @Param('id') id: string,
+    @Body() body: ReorderKanbanStagesDto,
+    @Req() { user }: IReq,
+  ) {
+    await this.reorderStages.execute({
+      userId: user.id,
+      kanbanId: id,
+      stageIds: body.stageIds,
+    });
+    return { status: 'ok' };
   }
 
   @Patch(':id/stages/:stageId')

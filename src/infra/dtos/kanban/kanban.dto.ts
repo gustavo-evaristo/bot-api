@@ -74,3 +74,14 @@ export class MoveLeadStageDto {
   @IsNotEmpty()
   targetStageId: string;
 }
+
+export class ReorderKanbanStagesDto {
+  @ApiProperty({
+    description: 'IDs dos estágios na nova ordem (todos os estágios do kanban)',
+    isArray: true,
+    type: String,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  stageIds: string[];
+}

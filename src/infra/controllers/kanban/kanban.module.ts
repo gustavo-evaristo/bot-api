@@ -12,6 +12,7 @@ import { UpdateKanbanStageUseCase } from 'src/domain/use-cases/kanban/update-kan
 import { DeleteKanbanStageUseCase } from 'src/domain/use-cases/kanban/delete-kanban-stage.use-case';
 import { ListKanbanStagesUseCase } from 'src/domain/use-cases/kanban/list-kanban-stages.use-case';
 import { MoveLeadStageUseCase } from 'src/domain/use-cases/kanban/move-lead-stage.use-case';
+import { ReorderKanbanStagesUseCase } from 'src/domain/use-cases/kanban/reorder-kanban-stages.use-case';
 
 @Module({
   imports: [DatabaseModule, AuthenticationModule],
@@ -26,6 +27,7 @@ import { MoveLeadStageUseCase } from 'src/domain/use-cases/kanban/move-lead-stag
     DeleteKanbanStageUseCase,
     ListKanbanStagesUseCase,
     MoveLeadStageUseCase,
+    ReorderKanbanStagesUseCase,
   ],
   controllers: [KanbanController],
 })
