@@ -136,20 +136,30 @@ export class KanbanRepository implements IKanbanRepository {
     };
 
     const leadRows = await this.prismaService.$queryRaw<LeadRow[]>`
-      SELECT DISTINCT ON (c."leadPhoneNumber")
-        c.id                      AS "conversationId",
-        c."leadName",
-        c."leadPhoneNumber",
-        f.title                   AS "flowTitle",
-        cp."lastKanbanStageId"    AS "kanbanStageId"
-      FROM conversations c
-      JOIN flows f ON f.id = c."flowId"
-        AND f."kanbanId" = ${kanbanId}
-        AND f."isDeleted" = false
-      JOIN conversation_progress cp ON cp."conversationId" = c.id
-        AND cp."lastKanbanStageId" IS NOT NULL
-      WHERE c."isDeleted" = false
-      ORDER BY c."leadPhoneNumber", c."updatedAt" DESC
+      SELECT
+        sub."conversationId",
+        sub."leadName",
+        sub."leadPhoneNumber",
+        sub."flowTitle",
+        sub."kanbanStageId"
+      FROM (
+        SELECT DISTINCT ON (c."leadPhoneNumber")
+          c.id                      AS "conversationId",
+          c."leadName",
+          c."leadPhoneNumber",
+          f.title                   AS "flowTitle",
+          cp."lastKanbanStageId"    AS "kanbanStageId",
+          cp."updatedAt"            AS "stageEnteredAt"
+        FROM conversations c
+        JOIN flows f ON f.id = c."flowId"
+          AND f."kanbanId" = ${kanbanId}
+          AND f."isDeleted" = false
+        JOIN conversation_progress cp ON cp."conversationId" = c.id
+          AND cp."lastKanbanStageId" IS NOT NULL
+        WHERE c."isDeleted" = false
+        ORDER BY c."leadPhoneNumber", c."updatedAt" DESC
+      ) sub
+      ORDER BY sub."stageEnteredAt" DESC
     `;
 
     const leadsByStage = new Map<string, LeadRow[]>();

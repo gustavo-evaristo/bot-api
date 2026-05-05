@@ -62,7 +62,9 @@ export class ConversationProgressEntity {
   }
 
   recordKanbanStage(stageId: string) {
+    if (this.lastKanbanStageId === stageId) return;
     this.lastKanbanStageId = stageId;
+    this.touch();
   }
 
   waitForResponse() {
