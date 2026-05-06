@@ -64,11 +64,24 @@ export class WhatsappService {
   }
 
   async stopAllSessions(): Promise<void> {
-    for (const [, sock] of this.sessions) {
+    const snapshot: Array<{ userId: string; phone: string | null }> = [];
+    for (const [userId, sock] of this.sessions) {
+      const rawPhone = sock.user?.id?.split(':')[0]?.split('@')[0];
+      const phone = rawPhone
+        ? this.normalizeBrazilianPhone('+' + rawPhone)
+        : null;
+      snapshot.push({ userId, phone });
       try {
         (sock as any).end?.();
       } catch {}
     }
+    this.logger.log(
+      `[BAILEYS-CONN] stopAllSessions encerrando ${snapshot.length} socket(s): ${
+        snapshot
+          .map((s) => `${s.phone ?? 'sem-numero'} (userId: ${s.userId})`)
+          .join(', ') || 'nenhum'
+      }`,
+    );
     this.sessions.clear();
     this.stores.clear();
     this.pendingSessions.clear();
@@ -85,6 +98,11 @@ export class WhatsappService {
     userId: string,
     targetPhoneNumber?: string | null,
   ): Promise<void> {
+    this.logger.log(
+      `[BAILEYS-CONN] startSession invocado (userId: ${userId}, targetPhone: ${
+        targetPhoneNumber ?? 'nenhum'
+      })`,
+    );
     const existingSock = this.sessions.get(userId);
     if (existingSock) {
       const rawCurrent = existingSock.user?.id?.split(':')[0]?.split('@')[0];
@@ -98,6 +116,9 @@ export class WhatsappService {
       if (desiredPhone && currentPhone && currentPhone === desiredPhone) {
         // Sessão já está pareada com o número desejado — re-emite CONNECTED
         // pra UI que acabou de abrir um novo socket, e ativa fluxo pendente.
+        this.logger.log(
+          `[BAILEYS-CONN] Sessão já existente e pareada (numero: ${currentPhone}, userId: ${userId}) — re-emitindo CONNECTED`,
+        );
         this.gateway.sendStatusToUser(userId, 'CONNECTED');
         await this.flowRepository
           .activatePendingByUserAndPhone(userId, currentPhone)
@@ -113,19 +134,29 @@ export class WhatsappService {
       if (desiredPhone && currentPhone && currentPhone !== desiredPhone) {
         // Pareado com OUTRO número — desloga e segue pra parear o novo.
         this.logger.log(
-          `Trocando número WhatsApp para ${userId}: ${currentPhone} → ${desiredPhone}.`,
+          `[BAILEYS-CONN] Trocando número WhatsApp para userId ${userId}: ${currentPhone} → ${desiredPhone}.`,
         );
         await this.forceResetSession(userId, existingSock);
       } else {
         // Sem alvo informado: mantém o que está e re-emite status.
         if (currentPhone) {
+          this.logger.log(
+            `[BAILEYS-CONN] Sessão já existente sem alvo informado (numero: ${currentPhone}, userId: ${userId}) — re-emitindo CONNECTED`,
+          );
           this.gateway.sendStatusToUser(userId, 'CONNECTED');
+        } else {
+          this.logger.log(
+            `[BAILEYS-CONN] Sessão já existente sem número pareado (userId: ${userId}) — mantendo socket atual`,
+          );
         }
         return;
       }
     }
 
     if (this.pendingSessions.has(userId)) {
+      this.logger.log(
+        `[BAILEYS-CONN] startSession ignorado pois já há tentativa pendente (userId: ${userId})`,
+      );
       return;
     }
 
@@ -192,7 +223,23 @@ export class WhatsappService {
     sock.ev.on(
       'connection.update',
       async ({ connection, lastDisconnect, qr }) => {
+        const rawPhoneCurrent = sock.user?.id?.split(':')[0]?.split('@')[0];
+        const phoneCurrent = rawPhoneCurrent
+          ? this.normalizeBrazilianPhone('+' + rawPhoneCurrent)
+          : null;
+
+        if (connection === 'connecting') {
+          this.logger.log(
+            `[BAILEYS-CONN] connection=connecting (numero: ${
+              phoneCurrent ?? 'desconhecido (ainda nao pareado)'
+            }, userId: ${userId})`,
+          );
+        }
+
         if (qr) {
+          this.logger.log(
+            `[BAILEYS-CONN] QR gerado, aguardando leitura (userId: ${userId})`,
+          );
           const qrImage = await QRCode.toDataURL(qr);
           this.gateway.sendQrToUser(userId, qrImage);
           await this.sessionRepository
@@ -211,7 +258,7 @@ export class WhatsappService {
             ? this.normalizeBrazilianPhone('+' + rawPhone)
             : null;
           this.logger.log(
-            `WhatsApp conectado! Número: ${phone} (userId: ${userId})`,
+            `[BAILEYS-CONN] connection=open — WhatsApp conectado! Numero: ${phone} (userId: ${userId})`,
           );
           this.gateway.sendStatusToUser(userId, 'CONNECTED');
           await this.sessionRepository
@@ -242,9 +289,23 @@ export class WhatsappService {
         }
 
         if (connection === 'close') {
+          const closeStatusCode = (lastDisconnect?.error as any)?.output
+            ?.statusCode;
+          const closeReasonName =
+            Object.entries(DisconnectReason ?? {}).find(
+              ([, v]) => v === closeStatusCode,
+            )?.[0] ?? 'desconhecido';
+          const closeErrorMsg =
+            (lastDisconnect?.error as any)?.message ?? 'sem mensagem';
+
           // Se este socket já foi substituído por outro (ex.: forceResetSession
           // que troca o número pareado), ignora pra não derrubar a nova sessão.
           if (this.sessions.get(userId) !== sock) {
+            this.logger.log(
+              `[BAILEYS-CONN] connection=close em socket SUBSTITUÍDO — ignorando (numero: ${
+                phoneCurrent ?? 'desconhecido'
+              }, userId: ${userId}, statusCode: ${closeStatusCode}, reason: ${closeReasonName})`,
+            );
             return;
           }
           this.sessions.delete(userId);
@@ -255,6 +316,12 @@ export class WhatsappService {
             .getConnectionInfo(userId)
             .then((info) => info?.connectedPhone ?? null)
             .catch(() => null);
+
+          const numeroAfetado =
+            phoneCurrent ?? previouslyConnected ?? 'desconhecido';
+          this.logger.warn(
+            `[BAILEYS-CONN] connection=close — DESCONECTADO (numero: ${numeroAfetado}, userId: ${userId}, statusCode: ${closeStatusCode}, reason: ${closeReasonName}, errorMsg: "${closeErrorMsg}")`,
+          );
 
           this.gateway.sendStatusToUser(userId, 'DISCONNECTED');
           await this.sessionRepository
@@ -284,12 +351,12 @@ export class WhatsappService {
               );
           }
 
-          const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+          const statusCode = closeStatusCode;
           const loggedOut = statusCode === DisconnectReason.loggedOut;
 
           if (loggedOut) {
-            this.logger.log(
-              `Sessão deslogada para ${userId}. Removendo sessão.`,
+            this.logger.warn(
+              `[BAILEYS-CONN] LOGOUT detectado — sessão removida (numero: ${numeroAfetado}, userId: ${userId})`,
             );
             await this.sessionRepository.delete(userId);
             this.stores.delete(userId);
@@ -301,16 +368,24 @@ export class WhatsappService {
                 ? 10_000
                 : 2_000;
             this.logger.log(
-              `Conexão encerrada para ${userId} (código ${statusCode}). Reconectando em ${delay / 1000}s...`,
+              `[BAILEYS-CONN] Reconexão agendada em ${
+                delay / 1000
+              }s (numero: ${numeroAfetado}, userId: ${userId}, statusCode: ${statusCode}, reason: ${closeReasonName})`,
             );
             setTimeout(() => {
+              this.logger.log(
+                `[BAILEYS-CONN] Reconectando agora (numero anterior: ${numeroAfetado}, userId: ${userId})`,
+              );
               this.startSession(userId).catch((err) =>
-                this.logger.error(`Erro ao reconectar ${userId}:`, err),
+                this.logger.error(
+                  `[BAILEYS-CONN] Erro ao reconectar (numero: ${numeroAfetado}, userId: ${userId}):`,
+                  err,
+                ),
               );
             }, delay);
           } else {
             this.logger.log(
-              `Conexão encerrada para ${userId} (código ${statusCode}). Não reconectando (modo standby).`,
+              `[BAILEYS-CONN] Não reconectando — modo standby (numero: ${numeroAfetado}, userId: ${userId}, statusCode: ${statusCode}, reason: ${closeReasonName})`,
             );
           }
         }
@@ -342,6 +417,12 @@ export class WhatsappService {
       ? this.normalizeBrazilianPhone('+' + rawPhone)
       : null;
 
+    this.logger.log(
+      `[BAILEYS-CONN] forceResetSession iniciado (numero: ${
+        previousPhone ?? 'desconhecido'
+      }, userId: ${userId})`,
+    );
+
     // Tira do mapa ANTES do logout pra que o handler de close (que checa
     // identidade) trate isso como sessão antiga e não dispare reconexão.
     this.sessions.delete(userId);
@@ -349,8 +430,18 @@ export class WhatsappService {
 
     try {
       await (sock as any).logout?.();
+      this.logger.log(
+        `[BAILEYS-CONN] forceResetSession — logout concluído (numero: ${
+          previousPhone ?? 'desconhecido'
+        }, userId: ${userId})`,
+      );
     } catch (err) {
-      this.logger.warn(`Falha no logout WhatsApp de ${userId}:`, err);
+      this.logger.warn(
+        `[BAILEYS-CONN] forceResetSession — falha no logout (numero: ${
+          previousPhone ?? 'desconhecido'
+        }, userId: ${userId}):`,
+        err,
+      );
       try {
         (sock as any).end?.(undefined);
       } catch {}
