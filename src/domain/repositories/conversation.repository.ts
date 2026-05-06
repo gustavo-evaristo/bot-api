@@ -53,6 +53,7 @@ export abstract class IConversationRepository {
   abstract update(conversation: ConversationEntity): Promise<void>;
   abstract findManyByUserId(userId: string): Promise<ConversationSummary[]>;
   abstract findById(id: string): Promise<ConversationDetail | null>;
+  abstract findByIdAsEntity(id: string): Promise<ConversationEntity | null>;
   abstract findIdsByLeadAndKanban(
     flowId: string,
     leadPhoneNumber: string,

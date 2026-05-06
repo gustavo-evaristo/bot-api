@@ -21,14 +21,16 @@ export class ToggleAutomationUseCase {
       conversation.leadPhoneNumber,
     );
 
-    if (!entity) throw new NotFoundException('Conversa ativa não encontrada');
+    const target = entity ?? (await this.conversationRepository.findByIdAsEntity(conversationId));
+
+    if (!target) throw new NotFoundException('Conversa não encontrada');
 
     if (enabled) {
-      entity.enableAutomation();
+      target.enableAutomation();
     } else {
-      entity.disableAutomation();
+      target.disableAutomation();
     }
 
-    await this.conversationRepository.update(entity);
+    await this.conversationRepository.update(target);
   }
 }

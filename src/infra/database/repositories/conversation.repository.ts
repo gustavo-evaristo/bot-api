@@ -24,6 +24,7 @@ export class ConversationRepository implements IConversationRepository {
         leadPhoneNumber: conversation.leadPhoneNumber,
         leadName: conversation.leadName,
         status: conversation.status,
+        automationEnabled: conversation.automationEnabled,
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
       },
@@ -178,6 +179,20 @@ export class ConversationRepository implements IConversationRepository {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     };
+  }
+
+  async findByIdAsEntity(id: string): Promise<ConversationEntity | null> {
+    const r = await this.prismaService.conversations.findUnique({
+      where: { id },
+    });
+
+    if (!r || r.isDeleted) return null;
+
+    return new ConversationEntity({
+      ...r,
+      id: UUID.from(r.id),
+      flowId: UUID.from(r.flowId),
+    });
   }
 
   async findLeadsByUserId(userId: string): Promise<LeadSummary[]> {

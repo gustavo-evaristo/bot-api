@@ -96,6 +96,25 @@ export class ProcessMessageUseCase {
         };
       }
 
+      // Se o humano desativou o bot na última conversa, mantém desativado ao
+      // criar a próxima — caso contrário um lead que retorna após o cooldown
+      // entraria no fluxo de novo.
+      if (lastFinished && !lastFinished.automationEnabled) {
+        const silentConversation = new ConversationEntity({
+          flowId: kanban.id,
+          leadPhoneNumber,
+          leadName: leadName ?? null,
+          automationEnabled: false,
+        });
+        await this.conversationRepository.create(silentConversation);
+        this.logger.log(`[${leadPhoneNumber}] Bot pausado para este lead — nova conversa criada silenciosa.`);
+        return {
+          conversationId: silentConversation.id.toString(),
+          userId,
+          messagesToSend: [],
+        };
+      }
+
       const startNode = nodeMap.get(details.startNodeId);
       if (!startNode) {
         return { conversationId: null, userId, messagesToSend: [] };
