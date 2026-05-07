@@ -241,8 +241,20 @@ export class ProcessMessageUseCase {
     leadPhoneNumber?: string,
   ): Promise<Output> {
     const messagesToSend: string[] = [];
+    const visited = new Set<string>();
 
     while (true) {
+      if (visited.has(progress.currentNodeId)) {
+        this.logger.error(
+          `Ciclo detectado no fluxo ${conversation.flowId.toString()} no nó ${progress.currentNodeId}. Encerrando conversa para evitar loop infinito.`,
+        );
+        conversation.finish();
+        await this.conversationRepository.update(conversation);
+        await this.conversationProgressRepository.update(progress);
+        break;
+      }
+      visited.add(progress.currentNodeId);
+
       const currentNode = nodeMap.get(progress.currentNodeId);
 
       if (!currentNode) {

@@ -5,6 +5,7 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import {
   MessageHistoryEntity,
   MessageSender,
+  MessageStatus,
 } from 'src/domain/entities/message-history.entity';
 import { UUID } from 'src/domain/entities/vos';
 import { WhatsappService } from './whatsapp.service';
@@ -39,7 +40,7 @@ export class FollowUpService {
       const message = 'Oi, ainda está por aí? 😊';
 
       try {
-        await this.whatsappService.sendMessage(
+        const { whatsappMessageId } = await this.whatsappService.sendMessage(
           userId,
           leadPhoneNumber,
           message,
@@ -51,6 +52,8 @@ export class FollowUpService {
             conversationId: UUID.from(conversationId),
             sender: MessageSender.BOT,
             content: message,
+            whatsappMessageId,
+            status: MessageStatus.SENT,
           }),
         );
 

@@ -41,14 +41,18 @@ export class SendMessageController {
       userId: user.id,
     });
 
-    await this.whatsappService.sendMessage(
+    const { whatsappMessageId } = await this.whatsappService.sendMessage(
       user.id,
       leadPhoneNumber,
       content,
       conversationId,
     );
 
-    await this.sendMessageUseCase.persist({ conversationId, content });
+    await this.sendMessageUseCase.persist({
+      conversationId,
+      content,
+      whatsappMessageId,
+    });
 
     return { sent: true };
   }

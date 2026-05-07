@@ -4,6 +4,7 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import {
   MessageHistoryEntity,
   MessageSender,
+  MessageStatus,
 } from 'src/domain/entities/message-history.entity';
 import { ConversationStatus } from 'src/domain/entities/conversation.entity';
 import { UUID } from 'src/domain/entities/vos';
@@ -20,6 +21,7 @@ interface ValidateOutput {
 interface PersistInput {
   conversationId: string;
   content: string;
+  whatsappMessageId?: string | null;
 }
 
 @Injectable()
@@ -56,12 +58,18 @@ export class SendMessageUseCase {
     return { leadPhoneNumber: conversation.leadPhoneNumber };
   }
 
-  async persist({ conversationId, content }: PersistInput): Promise<void> {
+  async persist({
+    conversationId,
+    content,
+    whatsappMessageId,
+  }: PersistInput): Promise<void> {
     await this.messageHistoryRepository.create(
       new MessageHistoryEntity({
         conversationId: UUID.from(conversationId),
         sender: MessageSender.BOT,
         content,
+        whatsappMessageId: whatsappMessageId ?? null,
+        status: MessageStatus.SENT,
       }),
     );
   }

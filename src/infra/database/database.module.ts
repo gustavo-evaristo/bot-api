@@ -34,6 +34,8 @@ import { IQuickReplyRepository } from 'src/domain/repositories/quick-reply.repos
 import { QuickReplyRepository } from './repositories/quick-reply.repository';
 import { ICompanyRepository } from 'src/domain/repositories/company.repository';
 import { CompanyRepository } from './repositories/company.repository';
+import { IPendingOutboundMessageRepository } from 'src/domain/repositories/pending-outbound-message.repository';
+import { PendingOutboundMessageRepository } from './repositories/pending-outbound-message.repository';
 
 @Module({
   providers: [
@@ -102,6 +104,10 @@ import { CompanyRepository } from './repositories/company.repository';
       provide: ICompanyRepository,
       useClass: CompanyRepository,
     },
+    {
+      provide: IPendingOutboundMessageRepository,
+      useClass: PendingOutboundMessageRepository,
+    },
   ],
   exports: [
     PrismaService,
@@ -121,6 +127,7 @@ import { CompanyRepository } from './repositories/company.repository';
     IKanbanStageRepository,
     IQuickReplyRepository,
     ICompanyRepository,
+    IPendingOutboundMessageRepository,
   ],
 })
 export class DatabaseModule {}

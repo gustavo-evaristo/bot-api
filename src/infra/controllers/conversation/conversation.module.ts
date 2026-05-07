@@ -8,12 +8,14 @@ import { ListLeadsUseCase } from 'src/domain/use-cases/conversation/list-leads.u
 import { SendMessageUseCase } from 'src/domain/use-cases/conversation/send-message.use-case';
 import { ToggleAutomationUseCase } from 'src/domain/use-cases/conversation/toggle-automation.use-case';
 import { DeleteConversationUseCase } from 'src/domain/use-cases/conversation/delete-conversation.use-case';
+import { MarkConversationAsReadUseCase } from 'src/domain/use-cases/conversation/mark-conversation-as-read.use-case';
 import { ListConversationsController } from './list-conversations.controller';
 import { GetConversationController } from './get-conversation.controller';
 import { ListLeadsController } from './list-leads.controller';
 import { SendMessageController } from './send-message.controller';
 import { ToggleAutomationController } from './toggle-automation.controller';
 import { DeleteConversationController } from './delete-conversation.controller';
+import { MarkConversationAsReadController } from './mark-conversation-as-read.controller';
 
 @Module({
   imports: [DatabaseModule, AuthenticationModule, WhatsappModule],
@@ -24,6 +26,7 @@ import { DeleteConversationController } from './delete-conversation.controller';
     SendMessageUseCase,
     ToggleAutomationUseCase,
     DeleteConversationUseCase,
+    MarkConversationAsReadUseCase,
   ],
   controllers: [
     ListConversationsController,
@@ -32,6 +35,7 @@ import { DeleteConversationController } from './delete-conversation.controller';
     SendMessageController,
     ToggleAutomationController,
     DeleteConversationController,
+    MarkConversationAsReadController,
   ],
 })
 export class ConversationModule {}

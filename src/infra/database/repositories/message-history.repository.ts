@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
+import {
+  IMessageHistoryRepository,
+  UpdateStatusResult,
+} from 'src/domain/repositories/message-history.repository';
 import {
   MessageHistoryEntity,
   MessageSender,
+  MessageStatus,
 } from 'src/domain/entities/message-history.entity';
 import { UUID } from 'src/domain/entities/vos';
 import { PrismaService } from '../prisma.service';
@@ -18,6 +22,9 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
         conversationId: message.conversationId.toString(),
         sender: message.sender,
         content: message.content,
+        whatsappMessageId: message.whatsappMessageId,
+        status: message.status,
+        statusUpdatedAt: message.statusUpdatedAt,
         createdAt: message.createdAt,
       },
     });
@@ -31,16 +38,7 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
       orderBy: { createdAt: 'asc' },
     });
 
-    return records.map(
-      (r) =>
-        new MessageHistoryEntity({
-          id: UUID.from(r.id),
-          conversationId: UUID.from(r.conversationId),
-          sender: r.sender as MessageSender,
-          content: r.content,
-          createdAt: r.createdAt,
-        }),
-    );
+    return records.map((r) => this.toEntity(r));
   }
 
   async findManyByConversationIds(
@@ -51,15 +49,88 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
       orderBy: { createdAt: 'asc' },
     });
 
-    return records.map(
-      (r) =>
-        new MessageHistoryEntity({
-          id: UUID.from(r.id),
-          conversationId: UUID.from(r.conversationId),
-          sender: r.sender as MessageSender,
-          content: r.content,
-          createdAt: r.createdAt,
-        }),
-    );
+    return records.map((r) => this.toEntity(r));
+  }
+
+  async updateStatusByWhatsappId(
+    whatsappMessageId: string,
+    status: MessageStatus,
+  ): Promise<UpdateStatusResult | null> {
+    const existing = await this.prismaService.message_history.findUnique({
+      where: { whatsappMessageId },
+    });
+
+    if (!existing) return null;
+
+    // Status só evolui — nunca regride (READ não vira DELIVERED).
+    const rank = this.statusRank(existing.status as MessageStatus);
+    const newRank = this.statusRank(status);
+    if (newRank <= rank) return null;
+
+    const statusUpdatedAt = new Date();
+    await this.prismaService.message_history.update({
+      where: { whatsappMessageId },
+      data: { status, statusUpdatedAt },
+    });
+
+    return {
+      conversationId: existing.conversationId,
+      whatsappMessageId,
+      status,
+      statusUpdatedAt,
+    };
+  }
+
+  async findUnreadLeadMessages(
+    conversationId: string,
+  ): Promise<MessageHistoryEntity[]> {
+    const records = await this.prismaService.message_history.findMany({
+      where: {
+        conversationId,
+        sender: MessageSender.LEAD,
+        status: { not: MessageStatus.READ },
+        whatsappMessageId: { not: null },
+      },
+    });
+    return records.map((r) => this.toEntity(r));
+  }
+
+  private toEntity(r: {
+    id: string;
+    conversationId: string;
+    sender: string;
+    content: string;
+    whatsappMessageId: string | null;
+    status: string;
+    statusUpdatedAt: Date | null;
+    createdAt: Date;
+  }): MessageHistoryEntity {
+    return new MessageHistoryEntity({
+      id: UUID.from(r.id),
+      conversationId: UUID.from(r.conversationId),
+      sender: r.sender as MessageSender,
+      content: r.content,
+      whatsappMessageId: r.whatsappMessageId,
+      status: r.status as MessageStatus,
+      statusUpdatedAt: r.statusUpdatedAt,
+      createdAt: r.createdAt,
+    });
+  }
+
+  private statusRank(status: MessageStatus): number {
+    switch (status) {
+      case MessageStatus.PENDING:
+        return 0;
+      case MessageStatus.FAILED:
+        return 0;
+      case MessageStatus.SENT:
+        return 1;
+      case MessageStatus.DELIVERED:
+        return 2;
+      case MessageStatus.READ:
+        return 3;
+      default:
+        return -1;
+    }
   }
 }

@@ -23,6 +23,9 @@ export interface GetConversationOutput {
     sender: string;
     content: string;
     sentAt: Date;
+    whatsappMessageId: string | null;
+    status: string;
+    statusUpdatedAt: Date | null;
   }[];
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +72,9 @@ export class GetConversationUseCase {
         sender: m.sender,
         content: m.content,
         sentAt: m.createdAt,
+        whatsappMessageId: m.whatsappMessageId,
+        status: m.status,
+        statusUpdatedAt: m.statusUpdatedAt,
       })),
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt,

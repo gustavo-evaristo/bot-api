@@ -8,6 +8,15 @@ export interface NewMessagePayload {
   sender: 'BOT' | 'LEAD';
   content: string;
   createdAt: Date;
+  whatsappMessageId?: string | null;
+  status?: string;
+}
+
+export interface MessageStatusPayload {
+  conversationId: string;
+  whatsappMessageId: string;
+  status: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+  statusUpdatedAt: Date;
 }
 
 @WebSocketGateway({
@@ -35,5 +44,9 @@ export class WhatsappGateway {
 
   sendNewMessage(userId: string, payload: NewMessagePayload) {
     this.server.to(userId).emit('new_message', payload);
+  }
+
+  sendMessageStatus(userId: string, payload: MessageStatusPayload) {
+    this.server.to(userId).emit('message_status', payload);
   }
 }

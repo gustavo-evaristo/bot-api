@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { WASocket } from '@whiskeysockets/baileys';
+import { Mutex } from 'async-mutex';
 import * as QRCode from 'qrcode';
 import { WhatsappGateway } from './whatsapp.gateway';
 import { ProcessMessageUseCase } from 'src/domain/use-cases/flow-engine/process-message.use-case';
@@ -7,10 +8,12 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import {
   MessageHistoryEntity,
   MessageSender,
+  MessageStatus,
 } from 'src/domain/entities/message-history.entity';
 import { UUID } from 'src/domain/entities/vos';
 import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-session.repository';
 import { IFlowRepository } from 'src/domain/repositories/flow.repository';
+import { IPendingOutboundMessageRepository } from 'src/domain/repositories/pending-outbound-message.repository';
 import { loadBaileys } from './baileys.loader';
 import { useWhatsAppAuthState } from './whatsapp-auth-state';
 
@@ -23,6 +26,24 @@ export class WhatsappService {
   private pendingSessions = new Set<string>();
   private stores = new Map<string, any>();
   private leaderMode = false;
+  private readonly leadMutexes = new Map<string, Mutex>();
+
+  private getLeadMutex(botPhone: string, leadPhone: string): Mutex {
+    const key = `${botPhone}::${leadPhone}`;
+    let m = this.leadMutexes.get(key);
+    if (!m) {
+      m = new Mutex();
+      this.leadMutexes.set(key, m);
+    }
+    return m;
+  }
+
+  private gcLeadMutexes() {
+    if (this.leadMutexes.size <= 1000) return;
+    for (const [k, mu] of this.leadMutexes) {
+      if (!mu.isLocked()) this.leadMutexes.delete(k);
+    }
+  }
 
   constructor(
     private readonly gateway: WhatsappGateway,
@@ -30,6 +51,7 @@ export class WhatsappService {
     private readonly messageHistoryRepository: IMessageHistoryRepository,
     private readonly sessionRepository: IWhatsAppSessionRepository,
     private readonly flowRepository: IFlowRepository,
+    private readonly outboundRepository: IPendingOutboundMessageRepository,
   ) {}
 
   setLeaderMode(value: boolean) {
@@ -404,6 +426,59 @@ export class WhatsappService {
         ).catch((err) => this.logger.error(`Erro ao processar mensagem:`, err));
       }
     });
+
+    sock.ev.on('messages.update', async (updates) => {
+      for (const u of updates) {
+        const numericStatus = u.update?.status;
+        if (numericStatus === undefined || numericStatus === null) continue;
+        const wppId = u.key?.id;
+        if (!wppId) continue;
+
+        const mapped = this.mapBaileysStatus(numericStatus);
+        if (!mapped) continue;
+
+        try {
+          const result =
+            await this.messageHistoryRepository.updateStatusByWhatsappId(
+              wppId,
+              mapped,
+            );
+          if (result) {
+            this.gateway.sendMessageStatus(userId, {
+              conversationId: result.conversationId,
+              whatsappMessageId: result.whatsappMessageId,
+              status: result.status,
+              statusUpdatedAt: result.statusUpdatedAt,
+            });
+          }
+        } catch (err) {
+          this.logger.error(
+            `Erro ao atualizar status da mensagem ${wppId}:`,
+            err,
+          );
+        }
+      }
+    });
+  }
+
+  private mapBaileysStatus(status: number): MessageStatus | null {
+    // proto.WebMessageInfo.Status:
+    // 0 ERROR | 1 PENDING | 2 SERVER_ACK (SENT) | 3 DELIVERY_ACK | 4 READ | 5 PLAYED
+    switch (status) {
+      case 0:
+        return MessageStatus.FAILED;
+      case 1:
+        return MessageStatus.PENDING;
+      case 2:
+        return MessageStatus.SENT;
+      case 3:
+        return MessageStatus.DELIVERED;
+      case 4:
+      case 5:
+        return MessageStatus.READ;
+      default:
+        return null;
+    }
   }
 
   private async forceResetSession(
@@ -532,7 +607,7 @@ export class WhatsappService {
     leadPhoneNumber: string,
     content: string,
     conversationId: string,
-  ): Promise<void> {
+  ): Promise<{ whatsappMessageId: string | null }> {
     const sock = await this.waitForActiveSession(userId, 15_000);
     if (!sock) {
       throw new Error(
@@ -541,14 +616,40 @@ export class WhatsappService {
     }
 
     const jid = leadPhoneNumber.replace('+', '') + '@s.whatsapp.net';
-    await sock.sendMessage(jid, { text: content });
+    const sent = await sock.sendMessage(jid, { text: content });
+    const whatsappMessageId = sent?.key?.id ?? null;
 
     this.gateway.sendNewMessage(userId, {
       conversationId,
       sender: 'BOT',
       content,
       createdAt: new Date(),
+      whatsappMessageId,
+      status: 'SENT',
     });
+
+    return { whatsappMessageId };
+  }
+
+  async markAsRead(
+    userId: string,
+    keys: Array<{ id: string; remoteJid: string; fromMe?: boolean }>,
+  ): Promise<void> {
+    const sock = await this.waitForActiveSession(userId, 5_000);
+    if (!sock) {
+      this.logger.warn(
+        `markAsRead: sessão não está ativa para userId=${userId}`,
+      );
+      return;
+    }
+    if (keys.length === 0) return;
+    await sock.readMessages(
+      keys.map((k) => ({
+        id: k.id,
+        remoteJid: k.remoteJid,
+        fromMe: k.fromMe ?? false,
+      })),
+    );
   }
 
   private normalizeBrazilianPhone(phone: string): string {
@@ -605,62 +706,70 @@ export class WhatsappService {
       `Mensagem recebida — bot: ${botPhoneNumber} | lead: ${leadPhoneNumber} | texto: "${messageText}"`,
     );
 
-    const {
-      conversationId,
-      userId: resolvedUserId,
-      messagesToSend,
-    } = await this.processMessageUseCase.execute({
-      botPhoneNumber,
-      leadPhoneNumber,
-      messageText,
-      leadName,
-    });
-
-    if (!resolvedUserId) {
-      this.logger.warn(
-        `Nenhum flow ativo para o número ${botPhoneNumber}. Mensagem de ${leadPhoneNumber} ignorada.`,
-      );
-      return;
-    }
-
-    if (conversationId && resolvedUserId) {
-      await this.messageHistoryRepository.create(
-        new MessageHistoryEntity({
-          conversationId: UUID.from(conversationId),
-          sender: MessageSender.LEAD,
-          content: messageText,
-        }),
-      );
-
-      this.gateway.sendNewMessage(resolvedUserId, {
+    const mutex = this.getLeadMutex(botPhoneNumber, leadPhoneNumber);
+    await mutex.runExclusive(async () => {
+      const {
         conversationId,
-        sender: 'LEAD',
-        content: messageText,
-        createdAt: new Date(),
+        userId: resolvedUserId,
+        messagesToSend,
+      } = await this.processMessageUseCase.execute({
+        botPhoneNumber,
+        leadPhoneNumber,
+        messageText,
+        leadName,
       });
-    }
 
-    for (const text of messagesToSend) {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      await sock.sendMessage(jid, { text });
+      if (!resolvedUserId) {
+        this.logger.warn(
+          `Nenhum flow ativo para o número ${botPhoneNumber}. Mensagem de ${leadPhoneNumber} ignorada.`,
+        );
+        return;
+      }
 
       if (conversationId && resolvedUserId) {
+        const incomingWppId = message.key?.id ?? null;
         await this.messageHistoryRepository.create(
           new MessageHistoryEntity({
             conversationId: UUID.from(conversationId),
-            sender: MessageSender.BOT,
-            content: text,
+            sender: MessageSender.LEAD,
+            content: messageText,
+            whatsappMessageId: incomingWppId,
+            status: MessageStatus.DELIVERED,
           }),
         );
 
         this.gateway.sendNewMessage(resolvedUserId, {
           conversationId,
-          sender: 'BOT',
-          content: text,
+          sender: 'LEAD',
+          content: messageText,
           createdAt: new Date(),
+          whatsappMessageId: incomingWppId,
+          status: 'DELIVERED',
         });
       }
-    }
+
+      if (
+        conversationId &&
+        resolvedUserId &&
+        messagesToSend.length > 0
+      ) {
+        // Enfileira no outbox em vez de enviar inline.
+        // O OutboundWorkerService cuida do envio com retry/backoff e persiste
+        // message_history (BOT) somente após confirmação de envio.
+        const baseTime = Date.now();
+        await this.outboundRepository.enqueue(
+          messagesToSend.map((text, i) => ({
+            conversationId,
+            userId: resolvedUserId,
+            toPhoneNumber: leadPhoneNumber,
+            content: text,
+            // Mantém espaçamento de 3s entre mensagens consecutivas.
+            nextAttemptAt: new Date(baseTime + i * 3000),
+          })),
+        );
+      }
+    });
+
+    this.gcLeadMutexes();
   }
 }

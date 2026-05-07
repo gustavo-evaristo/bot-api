@@ -5,11 +5,22 @@ export enum MessageSender {
   LEAD = 'LEAD',
 }
 
+export enum MessageStatus {
+  PENDING = 'PENDING',
+  SENT = 'SENT',
+  DELIVERED = 'DELIVERED',
+  READ = 'READ',
+  FAILED = 'FAILED',
+}
+
 type MessageHistoryEntityProps = {
   id?: string | UUID | null;
   conversationId: string | UUID;
   sender: MessageSender;
   content: string;
+  whatsappMessageId?: string | null;
+  status?: MessageStatus | null;
+  statusUpdatedAt?: Date | null;
   createdAt?: Date | null;
 };
 
@@ -18,6 +29,9 @@ export class MessageHistoryEntity {
   conversationId: UUID;
   sender: MessageSender;
   content: string;
+  whatsappMessageId: string | null;
+  status: MessageStatus;
+  statusUpdatedAt: Date | null;
   createdAt: Date;
 
   constructor(props: MessageHistoryEntityProps) {
@@ -37,6 +51,9 @@ export class MessageHistoryEntity {
 
     this.sender = props.sender;
     this.content = props.content;
+    this.whatsappMessageId = props.whatsappMessageId ?? null;
+    this.status = props.status ?? MessageStatus.SENT;
+    this.statusUpdatedAt = props.statusUpdatedAt ?? null;
     this.createdAt = props.createdAt ?? new Date();
   }
 }

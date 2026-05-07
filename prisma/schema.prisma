@@ -111,15 +111,21 @@ model conversations {
   progress          conversation_progress?
   leadResponses     lead_responses[]
   messageHistory    message_history[]
+  pendingOutbound   pending_outbound_message[]
 }
 
 model message_history {
-  id             String        @id @default(uuid())
-  conversationId String
-  conversation   conversations @relation(fields: [conversationId], references: [id])
-  sender         String
-  content        String
-  createdAt      DateTime      @default(now())
+  id                String        @id @default(uuid())
+  conversationId    String
+  conversation      conversations @relation(fields: [conversationId], references: [id])
+  sender            String
+  content           String
+  whatsappMessageId String?       @unique
+  status            String        @default("SENT")
+  statusUpdatedAt   DateTime?
+  createdAt         DateTime      @default(now())
+
+  @@index([whatsappMessageId])
 }
 
 model conversation_progress {
@@ -167,6 +173,24 @@ model instance_lock {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model pending_outbound_message {
+  id             String        @id @default(uuid())
+  conversationId String
+  conversation   conversations @relation(fields: [conversationId], references: [id])
+  userId         String
+  toPhoneNumber  String
+  content        String
+  attempts       Int           @default(0)
+  status         String        @default("PENDING")
+  lastError      String?
+  nextAttemptAt  DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  sentAt         DateTime?
+
+  @@index([status, nextAttemptAt])
+  @@index([conversationId])
 }
 
 model quick_replies {
