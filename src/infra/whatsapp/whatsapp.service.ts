@@ -27,6 +27,11 @@ export class WhatsappService {
   private stores = new Map<string, any>();
   private leaderMode = false;
   private readonly leadMutexes = new Map<string, Mutex>();
+  private readonly jidCache = new Map<
+    string,
+    { jid: string; cachedAt: number }
+  >();
+  private readonly JID_CACHE_TTL_MS = 15 * 60 * 1000;
 
   private getLeadMutex(botPhone: string, leadPhone: string): Mutex {
     const key = `${botPhone}::${leadPhone}`;
@@ -615,7 +620,7 @@ export class WhatsappService {
       );
     }
 
-    const jid = leadPhoneNumber.replace('+', '') + '@s.whatsapp.net';
+    const jid = await this.resolveJid(sock, leadPhoneNumber);
     const sent = await sock.sendMessage(jid, { text: content });
     const whatsappMessageId = sent?.key?.id ?? null;
 
@@ -643,13 +648,86 @@ export class WhatsappService {
       return;
     }
     if (keys.length === 0) return;
-    await sock.readMessages(
-      keys.map((k) => ({
-        id: k.id,
-        remoteJid: k.remoteJid,
-        fromMe: k.fromMe ?? false,
-      })),
+
+    // Resolve JID canônico para cada key — `remoteJid` recebido pode estar
+    // no formato com 9 (normalizado) e divergir do JID real do contato.
+    const resolved = await Promise.all(
+      keys.map(async (k) => {
+        const phone = k.remoteJid.split('@')[0];
+        const jid = await this.resolveJid(sock, '+' + phone);
+        return {
+          id: k.id,
+          remoteJid: jid,
+          fromMe: k.fromMe ?? false,
+        };
+      }),
     );
+
+    await sock.readMessages(resolved);
+  }
+
+  /**
+   * Resolve o JID canônico de um número via servidor do WhatsApp.
+   *
+   * No Brasil, números com DDD 31-38 (Minas Gerais) e alguns outros têm
+   * registro no WhatsApp **sem o "9"** mesmo sendo celular. Construir o JID
+   * por concatenação (`<phone>@s.whatsapp.net`) acerta para a maioria mas
+   * cria um chat fantasma para esses casos, deixando o lead sem receber a
+   * resposta. `onWhatsApp` é a única fonte autoritativa.
+   *
+   * Cache de 15 min para não consultar a cada mensagem.
+   */
+  private async resolveJid(
+    sock: WASocket,
+    phone: string,
+  ): Promise<string> {
+    const cleanPhone = phone.replace('+', '');
+    const fallbackJid = cleanPhone + '@s.whatsapp.net';
+
+    const cached = this.jidCache.get(cleanPhone);
+    if (cached && Date.now() - cached.cachedAt < this.JID_CACHE_TTL_MS) {
+      return cached.jid;
+    }
+
+    // Para números BR de celular, testa ambas as variantes (com e sem o "9")
+    // — DDDs como 32 podem estar registrados sem o 9 no WhatsApp.
+    const candidates = this.brazilianPhoneCandidates(cleanPhone);
+
+    try {
+      const results = await sock.onWhatsApp(...candidates);
+      const found = results?.find((r) => r?.exists);
+      if (found?.jid) {
+        this.jidCache.set(cleanPhone, { jid: found.jid, cachedAt: Date.now() });
+        if (found.jid !== fallbackJid) {
+          this.logger.log(
+            `[JID] ${cleanPhone} resolvido para ${found.jid} (variante divergente do construído)`,
+          );
+        }
+        return found.jid;
+      }
+      this.logger.warn(
+        `[JID] onWhatsApp não confirmou existência de ${cleanPhone} (testou: ${candidates.join(', ')}) — usando fallback`,
+      );
+    } catch (err) {
+      this.logger.warn(`[JID] onWhatsApp falhou para ${cleanPhone}:`, err);
+    }
+
+    return fallbackJid;
+  }
+
+  private brazilianPhoneCandidates(cleanPhone: string): string[] {
+    if (!cleanPhone.startsWith('55')) return [cleanPhone];
+    if (cleanPhone.length === 13) {
+      // 55 + DDD(2) + 9 + 8 dígitos — também testa sem o 9
+      const without9 = cleanPhone.slice(0, 4) + cleanPhone.slice(5);
+      return [cleanPhone, without9];
+    }
+    if (cleanPhone.length === 12) {
+      // 55 + DDD(2) + 8 dígitos — também testa com o 9
+      const with9 = cleanPhone.slice(0, 4) + '9' + cleanPhone.slice(4);
+      return [cleanPhone, with9];
+    }
+    return [cleanPhone];
   }
 
   private normalizeBrazilianPhone(phone: string): string {
