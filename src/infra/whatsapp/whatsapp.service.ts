@@ -472,13 +472,68 @@ export class WhatsappService {
     }
   }
 
+  private isSocketReady(sock: WASocket): boolean {
+    const ws = (sock as any).ws;
+    const readyState = ws?.readyState ?? ws?.socket?.readyState;
+    // WebSocket.OPEN === 1
+    return readyState === 1 && !!sock.user;
+  }
+
+  // Baileys derruba o socket em qualquer "connection: close" (rede instável,
+  // restartRequired, connectionReplaced...). A reconexão é agendada por
+  // setTimeout, então existe uma janela de 3–15s em que `sessions.get(userId)`
+  // retorna undefined. Sem este wait, o CRM falhava com "Sessão não está ativa"
+  // até o usuário tentar de novo manualmente.
+  private async waitForActiveSession(
+    userId: string,
+    timeoutMs: number,
+  ): Promise<WASocket | null> {
+    const start = Date.now();
+    const pollIntervalMs = 250;
+
+    // Se não há socket nem reconexão em andamento e somos o líder, dispara uma.
+    const initial = this.sessions.get(userId);
+    if (
+      !initial &&
+      !this.pendingSessions.has(userId) &&
+      this.leaderMode
+    ) {
+      this.logger.warn(
+        `[BAILEYS-CONN] sendMessage sem sessão ativa — disparando startSession (userId: ${userId})`,
+      );
+      this.startSession(userId).catch((err) =>
+        this.logger.error(
+          `Falha ao restaurar sessão sob demanda (userId: ${userId}):`,
+          err,
+        ),
+      );
+    }
+
+    while (Date.now() - start < timeoutMs) {
+      const sock = this.sessions.get(userId);
+      if (sock && this.isSocketReady(sock)) {
+        if (Date.now() - start > 0) {
+          this.logger.log(
+            `[BAILEYS-CONN] sendMessage aguardou ${
+              Date.now() - start
+            }ms até a sessão ficar pronta (userId: ${userId})`,
+          );
+        }
+        return sock;
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+
+    return null;
+  }
+
   async sendMessage(
     userId: string,
     leadPhoneNumber: string,
     content: string,
     conversationId: string,
   ): Promise<void> {
-    const sock = this.sessions.get(userId);
+    const sock = await this.waitForActiveSession(userId, 15_000);
     if (!sock) {
       throw new Error(
         'Sessão WhatsApp não está ativa. Conecte-se antes de enviar mensagens.',
