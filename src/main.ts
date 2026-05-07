@@ -8,13 +8,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
-
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   app.useGlobalFilters(new CustomExceptionFilter());
 
   const config = new DocumentBuilder()
-    .setTitle('Bot API')
+    .setTitle('Consigpro API')
     .setDescription('Bot api teste')
     .setVersion('1.0')
     .addBearerAuth()
