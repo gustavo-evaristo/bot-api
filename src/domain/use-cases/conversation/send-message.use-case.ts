@@ -8,14 +8,18 @@ import {
 import { ConversationStatus } from 'src/domain/entities/conversation.entity';
 import { UUID } from 'src/domain/entities/vos';
 
-interface Input {
+interface ValidateInput {
   conversationId: string;
   userId: string;
-  content: string;
 }
 
-interface Output {
+interface ValidateOutput {
   leadPhoneNumber: string;
+}
+
+interface PersistInput {
+  conversationId: string;
+  content: string;
 }
 
 @Injectable()
@@ -25,7 +29,10 @@ export class SendMessageUseCase {
     private readonly messageHistoryRepository: IMessageHistoryRepository,
   ) {}
 
-  async execute({ conversationId, userId, content }: Input): Promise<Output> {
+  async validate({
+    conversationId,
+    userId,
+  }: ValidateInput): Promise<ValidateOutput> {
     const conversation =
       await this.conversationRepository.findById(conversationId);
 
@@ -46,6 +53,10 @@ export class SendMessageUseCase {
       );
     }
 
+    return { leadPhoneNumber: conversation.leadPhoneNumber };
+  }
+
+  async persist({ conversationId, content }: PersistInput): Promise<void> {
     await this.messageHistoryRepository.create(
       new MessageHistoryEntity({
         conversationId: UUID.from(conversationId),
@@ -53,7 +64,5 @@ export class SendMessageUseCase {
         content,
       }),
     );
-
-    return { leadPhoneNumber: conversation.leadPhoneNumber };
   }
 }

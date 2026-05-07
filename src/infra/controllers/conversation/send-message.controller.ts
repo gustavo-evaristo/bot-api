@@ -33,10 +33,12 @@ export class SendMessageController {
     @Body() { content }: SendMessageDTO,
     @Req() { user }: IReq,
   ) {
-    const { leadPhoneNumber } = await this.sendMessageUseCase.execute({
+    // Ordem importa: validamos, enviamos pelo WhatsApp e SÓ ENTÃO persistimos.
+    // Se persistíssemos antes do envio, falhas no Baileys deixariam mensagens
+    // fantasmas no banco que reaparecem ao recarregar a página.
+    const { leadPhoneNumber } = await this.sendMessageUseCase.validate({
       conversationId,
       userId: user.id,
-      content,
     });
 
     await this.whatsappService.sendMessage(
@@ -45,6 +47,8 @@ export class SendMessageController {
       content,
       conversationId,
     );
+
+    await this.sendMessageUseCase.persist({ conversationId, content });
 
     return { sent: true };
   }
