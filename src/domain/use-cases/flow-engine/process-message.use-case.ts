@@ -74,7 +74,11 @@ export class ProcessMessageUseCase {
 
     // Automação desativada: humano assumiu, bot silencioso
     if (conversation && !conversation.automationEnabled) {
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     // Nova conversa: verificar cooldown de 24h antes de reiniciar o fluxo
@@ -88,7 +92,9 @@ export class ProcessMessageUseCase {
         lastFinished &&
         isAfter(lastFinished.updatedAt, subHours(new Date(), 1))
       ) {
-        this.logger.warn(`[${leadPhoneNumber}] Cooldown ativo — última conversa encerrada há menos de 1h. Ignorando nova mensagem.`);
+        this.logger.warn(
+          `[${leadPhoneNumber}] Cooldown ativo — última conversa encerrada há menos de 1h. Ignorando nova mensagem.`,
+        );
         return {
           conversationId: lastFinished.id.toString(),
           userId,
@@ -107,7 +113,9 @@ export class ProcessMessageUseCase {
           automationEnabled: false,
         });
         await this.conversationRepository.create(silentConversation);
-        this.logger.log(`[${leadPhoneNumber}] Bot pausado para este lead — nova conversa criada silenciosa.`);
+        this.logger.log(
+          `[${leadPhoneNumber}] Bot pausado para este lead — nova conversa criada silenciosa.`,
+        );
         return {
           conversationId: silentConversation.id.toString(),
           userId,
@@ -151,20 +159,38 @@ export class ProcessMessageUseCase {
       );
 
     if (!progress) {
-      this.logger.warn(`[${leadPhoneNumber}] Progresso não encontrado para conversa ${conversation.id}`);
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      this.logger.warn(
+        `[${leadPhoneNumber}] Progresso não encontrado para conversa ${conversation.id}`,
+      );
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     if (!progress.waitingForResponse) {
-      this.logger.warn(`[${leadPhoneNumber}] Bot não está aguardando resposta (waitingForResponse=false) — mensagem ignorada`);
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      this.logger.warn(
+        `[${leadPhoneNumber}] Bot não está aguardando resposta (waitingForResponse=false) — mensagem ignorada`,
+      );
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     const currentNode = nodeMap.get(progress.currentNodeId);
 
     if (!currentNode) {
-      this.logger.error(`[${leadPhoneNumber}] Nó atual não encontrado no mapa: currentNodeId=${progress.currentNodeId}. Verifique se o nó existe e não foi deletado.`);
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      this.logger.error(
+        `[${leadPhoneNumber}] Nó atual não encontrado no mapa: currentNodeId=${progress.currentNodeId}. Verifique se o nó existe e não foi deletado.`,
+      );
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     // Determinar próximo nó e salvar resposta
@@ -186,7 +212,9 @@ export class ProcessMessageUseCase {
       );
 
       if (!matched) {
-        const options = sorted.map((o, i) => `${i + 1}. ${o.content}`).join('\n');
+        const options = sorted
+          .map((o, i) => `${i + 1}. ${o.content}`)
+          .join('\n');
         return {
           conversationId: conversation.id.toString(),
           userId,
@@ -215,10 +243,16 @@ export class ProcessMessageUseCase {
     await this.leadResponseRepository.create(leadResponse);
 
     if (nextNodeId === null) {
-      this.logger.warn(`[${leadPhoneNumber}] Nó "${currentNode.type}" (id=${currentNode.id}) não tem próximo nó definido (defaultNextNodeId=null). Conversa encerrada.`);
+      this.logger.warn(
+        `[${leadPhoneNumber}] Nó "${currentNode.type}" (id=${currentNode.id}) não tem próximo nó definido (defaultNextNodeId=null). Conversa encerrada.`,
+      );
       conversation.finish();
       await this.conversationRepository.update(conversation);
-      return { conversationId: conversation.id.toString(), userId, messagesToSend: [] };
+      return {
+        conversationId: conversation.id.toString(),
+        userId,
+        messagesToSend: [],
+      };
     }
 
     progress.advanceTo(nextNodeId);
@@ -258,7 +292,9 @@ export class ProcessMessageUseCase {
       const currentNode = nodeMap.get(progress.currentNodeId);
 
       if (!currentNode) {
-        this.logger.error(`Nó não encontrado no mapa durante execução: nodeId=${progress.currentNodeId}. Verifique conexões do fluxo.`);
+        this.logger.error(
+          `Nó não encontrado no mapa durante execução: nodeId=${progress.currentNodeId}. Verifique conexões do fluxo.`,
+        );
         conversation.finish();
         await this.conversationRepository.update(conversation);
         break;
@@ -279,7 +315,10 @@ export class ProcessMessageUseCase {
       }
 
       if (currentNode.type === NodeType.FORM) {
-        const formMessage = await this.buildFormMessage(currentNode, leadPhoneNumber);
+        const formMessage = await this.buildFormMessage(
+          currentNode,
+          leadPhoneNumber,
+        );
         messagesToSend.push(formMessage);
 
         if (!currentNode.defaultNextNodeId) {
@@ -314,7 +353,9 @@ export class ProcessMessageUseCase {
           const sorted = [...currentNode.options].sort(
             (a, b) => a.order - b.order,
           );
-          const opts = sorted.map((o, i) => `${i + 1}. ${o.content}`).join('\n');
+          const opts = sorted
+            .map((o, i) => `${i + 1}. ${o.content}`)
+            .join('\n');
           message = `${currentNode.content}\n\n${opts}\n\n_Digite o número da opção desejada._`;
         }
 
@@ -332,8 +373,13 @@ export class ProcessMessageUseCase {
     };
   }
 
-  private async buildFormMessage(node: FlowNodeDetail, leadPhone: string): Promise<string> {
-    this.logger.log(`[FORM] nodeId=${node.id} formId=${node.formId} leadPhone=${leadPhone}`);
+  private async buildFormMessage(
+    node: FlowNodeDetail,
+    leadPhone: string,
+  ): Promise<string> {
+    this.logger.log(
+      `[FORM] nodeId=${node.id} formId=${node.formId} leadPhone=${leadPhone}`,
+    );
 
     if (!node.formId) {
       this.logger.warn(`[FORM] formId is null — sending content only`);
@@ -341,14 +387,18 @@ export class ProcessMessageUseCase {
     }
 
     const form = await this.formRepository.getByIdInternal(node.formId);
-    this.logger.log(`[FORM] form found: ${form ? form.id : 'NOT FOUND'} token=${form?.token}`);
+    this.logger.log(
+      `[FORM] form found: ${form ? form.id : 'NOT FOUND'} token=${form?.token}`,
+    );
 
     if (!form) return node.content;
 
     const params = new URLSearchParams({ phone: leadPhone });
-    if (node.postFillKanbanStageId) params.set('postFillStageId', node.postFillKanbanStageId);
+    if (node.postFillKanbanStageId)
+      params.set('postFillStageId', node.postFillKanbanStageId);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://app.consig.pro';
+
     const link = `${frontendUrl}/f/${form.token}?${params.toString()}`;
 
     this.logger.log(`[FORM] link gerado: ${link}`);
@@ -356,9 +406,7 @@ export class ProcessMessageUseCase {
     return `${node.content}\n\n${link}`;
   }
 
-  private buildNodeMap(
-    details: FlowDetails,
-  ): Map<string, FlowNodeDetail> {
+  private buildNodeMap(details: FlowDetails): Map<string, FlowNodeDetail> {
     return new Map(details.nodes.map((n) => [n.id, n]));
   }
 }
