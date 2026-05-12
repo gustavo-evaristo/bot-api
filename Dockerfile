@@ -1,10 +1,10 @@
 FROM node:24-alpine AS builder
 
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ git
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.12.3
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
