@@ -32,9 +32,12 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prismaService.conversations.update({
-      where: { id },
-      data: { isDeleted: true, updatedAt: new Date() },
+    await this.prismaService.$transaction(async (tx) => {
+      await tx.message_history.deleteMany({ where: { conversationId: id } });
+      await tx.conversations.update({
+        where: { id },
+        data: { isDeleted: true, updatedAt: new Date() },
+      });
     });
   }
 
@@ -264,7 +267,7 @@ export class ConversationRepository implements IConversationRepository {
     leadPhoneNumber: string,
   ): Promise<string[]> {
     const records = await this.prismaService.conversations.findMany({
-      where: { flowId, leadPhoneNumber },
+      where: { flowId, leadPhoneNumber, isDeleted: false },
       select: { id: true },
     });
 

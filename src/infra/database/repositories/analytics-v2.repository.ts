@@ -32,7 +32,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
 
     type BigIntRow = { count: bigint };
 
-    // KPIs "hoje"
+    // KPIs "hoje" — usando fuso de Brasília (UTC-3, sem horário de verão)
     const [todayMsgsRow] = await prisma.$queryRaw<BigIntRow[]>`
       SELECT COUNT(mh.id)::bigint AS count
       FROM flows k
@@ -41,7 +41,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
         AND mh.sender = 'LEAD'
-        AND mh."createdAt" >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
+        AND mh."createdAt" >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'America/Sao_Paulo'
     `;
 
     const [todayLeadsRow] = await prisma.$queryRaw<BigIntRow[]>`
@@ -50,7 +50,7 @@ export class AnalyticsV2Repository implements IAnalyticsV2Repository {
       JOIN conversations c ON c."flowId" = k.id
       WHERE k."userId" = ${userId} ${flowFilterK}
         AND k."isDeleted" = false
-        AND c."createdAt" >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
+        AND c."createdAt" >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'America/Sao_Paulo'
     `;
 
     // Active conversations + pending responses
