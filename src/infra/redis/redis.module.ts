@@ -6,12 +6,14 @@ import { RedisLockService } from './redis-lock.service';
 
 function createClient(name: string, url: string): Redis {
   const logger = new Logger(`Redis:${name}`);
-  const isTls = url.startsWith('rediss://');
+  // Importante: NAO sobrescrever `tls` aqui. Quando a URL eh `rediss://`,
+  // ioredis ja liga TLS com `servername` (SNI) derivado do hostname — Upstash
+  // depende de SNI para servir o certificado correto. Passar `tls: {}`
+  // sobrepoe esse comportamento e quebra o handshake (ECONNRESET em loop).
   const opts: RedisOptions = {
     maxRetriesPerRequest: null,
     enableReadyCheck: true,
     lazyConnect: false,
-    ...(isTls ? { tls: {} } : {}),
   };
   const client = new Redis(url, opts);
   client.on('ready', () => logger.log('connected'));
