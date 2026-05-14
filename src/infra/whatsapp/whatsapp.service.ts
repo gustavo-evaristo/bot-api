@@ -16,8 +16,15 @@ import { IFlowRepository } from 'src/domain/repositories/flow.repository';
 import { IPendingOutboundMessageRepository } from 'src/domain/repositories/pending-outbound-message.repository';
 import { loadBaileys } from './baileys.loader';
 import { useWhatsAppAuthState } from './whatsapp-auth-state';
+import {
+  AcquiredLock,
+  RedisLockService,
+} from '../redis/redis-lock.service';
 
 const RECONNECT_BATCH_SIZE = 10;
+const SESSION_LOCK_TTL_MS = 30_000;
+const SESSION_LOCK_RENEW_MS = 10_000;
+const sessionLockKey = (userId: string) => `wa:lock:session:${userId}`;
 
 @Injectable()
 export class WhatsappService {
@@ -26,6 +33,8 @@ export class WhatsappService {
   private pendingSessions = new Set<string>();
   private stores = new Map<string, any>();
   private leaderMode = false;
+  private readonly sessionLocks = new Map<string, AcquiredLock>();
+  private readonly lockRenewers = new Map<string, NodeJS.Timeout>();
   private readonly leadMutexes = new Map<string, Mutex>();
   private readonly jidCache = new Map<
     string,
@@ -57,7 +66,45 @@ export class WhatsappService {
     private readonly sessionRepository: IWhatsAppSessionRepository,
     private readonly flowRepository: IFlowRepository,
     private readonly outboundRepository: IPendingOutboundMessageRepository,
+    private readonly redisLock: RedisLockService,
   ) {}
+
+  private startLockRenewal(userId: string, lock: AcquiredLock): void {
+    const existing = this.lockRenewers.get(userId);
+    if (existing) clearInterval(existing);
+    const timer = setInterval(async () => {
+      const renewed = await this.redisLock
+        .renew(lock, SESSION_LOCK_TTL_MS)
+        .catch(() => false);
+      if (!renewed) {
+        this.logger.warn(
+          `[BAILEYS-CONN] Lock perdido (userId: ${userId}) — encerrando socket local para evitar conflito`,
+        );
+        await this.releaseSessionLock(userId);
+        const sock = this.sessions.get(userId);
+        if (sock) {
+          this.sessions.delete(userId);
+          try {
+            (sock as any).end?.();
+          } catch {}
+        }
+      }
+    }, SESSION_LOCK_RENEW_MS);
+    this.lockRenewers.set(userId, timer);
+  }
+
+  private async releaseSessionLock(userId: string): Promise<void> {
+    const timer = this.lockRenewers.get(userId);
+    if (timer) {
+      clearInterval(timer);
+      this.lockRenewers.delete(userId);
+    }
+    const lock = this.sessionLocks.get(userId);
+    if (lock) {
+      this.sessionLocks.delete(userId);
+      await this.redisLock.release(lock).catch(() => {});
+    }
+  }
 
   setLeaderMode(value: boolean) {
     this.leaderMode = value;
@@ -109,9 +156,13 @@ export class WhatsappService {
           .join(', ') || 'nenhum'
       }`,
     );
+    const userIdsToRelease = Array.from(this.sessionLocks.keys());
     this.sessions.clear();
     this.stores.clear();
     this.pendingSessions.clear();
+    await Promise.all(
+      userIdsToRelease.map((userId) => this.releaseSessionLock(userId)),
+    );
     // After stepping down we no longer hold any socket. Mark all rows as
     // DISCONNECTED so the new leader (or readers) see consistent state.
     await this.sessionRepository
@@ -187,6 +238,30 @@ export class WhatsappService {
       return;
     }
 
+    // Lock distribuído por userId: garante que apenas UMA instância da API
+    // abra socket Baileys para este número, mesmo durante deploys/restarts
+    // que sobrepõem instâncias. Sem isto, dois sockets com as mesmas creds
+    // disparam o "connectionReplaced (Stream Errored conflict)" do WhatsApp.
+    if (!this.sessionLocks.has(userId)) {
+      const lock = await this.redisLock
+        .acquire(sessionLockKey(userId), SESSION_LOCK_TTL_MS)
+        .catch((err) => {
+          this.logger.error(
+            `[BAILEYS-CONN] Erro ao adquirir lock (userId: ${userId}):`,
+            err,
+          );
+          return null;
+        });
+      if (!lock) {
+        this.logger.log(
+          `[BAILEYS-CONN] startSession ignorado — outra instância já é dona da sessão (userId: ${userId})`,
+        );
+        return;
+      }
+      this.sessionLocks.set(userId, lock);
+      this.startLockRenewal(userId, lock);
+    }
+
     this.pendingSessions.add(userId);
 
     let DisconnectReason: any;
@@ -230,6 +305,7 @@ export class WhatsappService {
       this.sessions.set(userId, sock);
     } catch (err) {
       this.pendingSessions.delete(userId);
+      await this.releaseSessionLock(userId);
       throw err;
     }
 
@@ -387,13 +463,22 @@ export class WhatsappService {
             );
             await this.sessionRepository.delete(userId);
             this.stores.delete(userId);
+            await this.releaseSessionLock(userId);
+          } else if (
+            statusCode === DisconnectReason.connectionReplaced
+          ) {
+            // Outra instância (ou outro processo no celular do cliente)
+            // assumiu a sessão. NÃO reconectamos automaticamente: isso só
+            // alimenta o ping-pong de "Stream Errored (conflict)" que era
+            // o sintoma original. Liberamos o lock e ficamos em standby —
+            // o frontend pode disparar /whatsapp/start de novo se quiser.
+            this.logger.warn(
+              `[BAILEYS-CONN] connectionReplaced — liberando lock e parando (numero: ${numeroAfetado}, userId: ${userId})`,
+            );
+            this.stores.delete(userId);
+            await this.releaseSessionLock(userId);
           } else if (this.leaderMode) {
-            // Código 440 = Connection Replaced (outra instância tomou a sessão).
-            // Aguarda antes de reconectar para evitar loop de kick mútuo.
-            const delay =
-              statusCode === DisconnectReason.connectionReplaced
-                ? 10_000
-                : 2_000;
+            const delay = 2_000;
             this.logger.log(
               `[BAILEYS-CONN] Reconexão agendada em ${
                 delay / 1000
@@ -414,6 +499,7 @@ export class WhatsappService {
             this.logger.log(
               `[BAILEYS-CONN] Não reconectando — modo standby (numero: ${numeroAfetado}, userId: ${userId}, statusCode: ${statusCode}, reason: ${closeReasonName})`,
             );
+            await this.releaseSessionLock(userId);
           }
         }
       },
@@ -507,6 +593,7 @@ export class WhatsappService {
     // identidade) trate isso como sessão antiga e não dispare reconexão.
     this.sessions.delete(userId);
     this.stores.delete(userId);
+    await this.releaseSessionLock(userId);
 
     try {
       await (sock as any).logout?.();

@@ -11,9 +11,15 @@ import { LeaderElectionService } from './leader-election.service';
 import { OutboundWorkerService } from './outbound-worker.service';
 import { IWhatsappStatusRepository } from 'src/domain/repositories/whatsapp-status.repository';
 import { WhatsappStatusRepository } from './whatsapp-status.repository';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), DatabaseModule, AuthenticationModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    DatabaseModule,
+    AuthenticationModule,
+    RedisModule,
+  ],
   providers: [
     WhatsappService,
     WhatsappGateway,
