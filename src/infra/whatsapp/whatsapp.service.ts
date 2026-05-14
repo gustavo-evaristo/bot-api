@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { WASocket } from '@whiskeysockets/baileys';
 import { Mutex } from 'async-mutex';
 import * as QRCode from 'qrcode';
+import type Redis from 'ioredis';
 import { WhatsappGateway } from './whatsapp.gateway';
+import { REDIS_PUB } from '../redis/redis.constants';
 import { ProcessMessageUseCase } from 'src/domain/use-cases/flow-engine/process-message.use-case';
 import { IMessageHistoryRepository } from 'src/domain/repositories/message-history.repository';
 import {
@@ -67,6 +69,7 @@ export class WhatsappService {
     private readonly flowRepository: IFlowRepository,
     private readonly outboundRepository: IPendingOutboundMessageRepository,
     private readonly redisLock: RedisLockService,
+    @Inject(REDIS_PUB) private readonly redis: Redis | null,
   ) {}
 
   private startLockRenewal(userId: string, lock: AcquiredLock): void {
@@ -276,6 +279,7 @@ export class WhatsappService {
       const authState = await useWhatsAppAuthState(
         userId,
         this.sessionRepository,
+        this.redis,
       );
       saveCreds = authState.saveCreds;
 
