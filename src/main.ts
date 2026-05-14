@@ -3,6 +3,9 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CustomExceptionFilter } from './infra/middlewares/exception.middleware';
 import { ValidationPipe } from '@nestjs/common';
+import { RedisIoAdapter } from './infra/redis/redis-io.adapter';
+import { REDIS_PUB, REDIS_SUB } from './infra/redis/redis.constants';
+import type Redis from 'ioredis';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +14,12 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   app.useGlobalFilters(new CustomExceptionFilter());
+
+  const pub = app.get<Redis | null>(REDIS_PUB, { strict: false });
+  const sub = app.get<Redis | null>(REDIS_SUB, { strict: false });
+  const ioAdapter = new RedisIoAdapter(app, pub, sub);
+  await ioAdapter.init();
+  app.useWebSocketAdapter(ioAdapter);
 
   const config = new DocumentBuilder()
     .setTitle('Consigpro API')
