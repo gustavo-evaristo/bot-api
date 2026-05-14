@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
 import type { WASocket } from '@whiskeysockets/baileys';
 import { Mutex } from 'async-mutex';
 import * as QRCode from 'qrcode';
@@ -106,6 +107,41 @@ export class WhatsappService {
     if (lock) {
       this.sessionLocks.delete(userId);
       await this.redisLock.release(lock).catch(() => {});
+    }
+  }
+
+  /**
+   * A cada 30s, se somos lider e existem sessoes WhatsApp registradas no
+   * banco que NAO estao no map local (sem socket aberto aqui), tenta de
+   * novo o startSession. Cobre o caso em que o boot encontrou lock orfao
+   * de uma execucao anterior e desistiu sem retry — sem isso, a sessao
+   * fica offline ate o proximo restart manual.
+   *
+   * Se o lock estiver realmente com outra instancia, o startSession faz
+   * no-op (log informativo). So efetivamente conecta quando o lock estiver
+   * livre.
+   */
+  @Interval(30_000)
+  async reconcileSessions(): Promise<void> {
+    if (!this.leaderMode) return;
+    try {
+      const userIds = await this.sessionRepository.findAllUserIds();
+      for (const userId of userIds) {
+        if (this.sessions.has(userId)) continue;
+        if (this.pendingSessions.has(userId)) continue;
+        if (this.sessionLocks.has(userId)) continue;
+        this.logger.log(
+          `[BAILEYS-CONN] reconcile: tentando reabrir sessao orfa (userId: ${userId})`,
+        );
+        this.startSession(userId).catch((err) =>
+          this.logger.error(
+            `[BAILEYS-CONN] reconcile falhou para userId ${userId}:`,
+            err,
+          ),
+        );
+      }
+    } catch (err) {
+      this.logger.error('[BAILEYS-CONN] reconcileSessions erro:', err);
     }
   }
 
