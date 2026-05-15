@@ -924,6 +924,20 @@ export class WhatsappService {
     return current;
   }
 
+  /**
+   * Retorna o "caminho" de chaves aninhadas (so a primeira em cada nivel).
+   * Usado para diagnostico — sem expor conteudo, deixa claro o tipo da
+   * mensagem e qualquer wrapper desconhecido.
+   * Ex: "ephemeralMessage.message.extendedTextMessage"
+   */
+  private describeMessageShape(msg: any, depth = 0): string {
+    if (!msg || typeof msg !== 'object' || depth > 5) return '';
+    const k = Object.keys(msg)[0];
+    if (!k) return '';
+    const child = this.describeMessageShape(msg[k], depth + 1);
+    return child ? `${k}.${child}` : k;
+  }
+
   private normalizeBrazilianPhone(phone: string): string {
     const digits = phone.replace('+', '');
     // Número brasileiro sem o 9 extra: +55 + 2 dígitos DDD + 8 dígitos = 12 dígitos
@@ -972,10 +986,11 @@ export class WhatsappService {
       null;
 
     if (!messageText || messageText.trim() === '') {
-      const outerType = Object.keys(message.message ?? {})[0] ?? 'unknown';
-      const innerType = Object.keys(innerMessage ?? {})[0] ?? 'unknown';
+      // Loga o caminho completo (apenas chaves, sem conteudo) para
+      // diagnosticar wrappers desconhecidos sem vazar texto da mensagem.
+      const shape = this.describeMessageShape(message.message);
       this.logger.warn(
-        `Mensagem sem texto extraivel ignorada (outer: ${outerType}, inner: ${innerType}, wppId: ${wppId}, userId: ${userId})`,
+        `Mensagem sem texto extraivel ignorada (shape: ${shape}, wppId: ${wppId}, userId: ${userId})`,
       );
       return;
     }
