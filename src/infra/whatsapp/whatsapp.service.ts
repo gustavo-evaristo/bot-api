@@ -894,6 +894,36 @@ export class WhatsappService {
     return [cleanPhone];
   }
 
+  /**
+   * Mensagens do WhatsApp vem aninhadas dentro de wrappers em varios casos:
+   * - ephemeralMessage: mensagens que desaparecem
+   * - viewOnceMessage / viewOnceMessageV2(Extension): ver uma vez
+   * - documentWithCaptionMessage: documento com legenda
+   * - editedMessage: mensagens editadas
+   * - Click-to-WhatsApp ads (Instagram/Facebook): aninhada em wrappers
+   *   carregando contextInfo.externalAdReply
+   *
+   * Sem unwrap, o conteudo real fica invisivel para o extrator de texto.
+   * Loop com limite porque wrappers podem ser duplos aninhados.
+   */
+  private unwrapMessageContent(msg: any): any {
+    let current = msg;
+    for (let i = 0; i < 5; i++) {
+      if (!current) return null;
+      const inner =
+        current.ephemeralMessage?.message ??
+        current.viewOnceMessage?.message ??
+        current.viewOnceMessageV2?.message ??
+        current.viewOnceMessageV2Extension?.message ??
+        current.documentWithCaptionMessage?.message ??
+        current.editedMessage?.message ??
+        null;
+      if (!inner) return current;
+      current = inner;
+    }
+    return current;
+  }
+
   private normalizeBrazilianPhone(phone: string): string {
     const digits = phone.replace('+', '');
     // Número brasileiro sem o 9 extra: +55 + 2 dígitos DDD + 8 dígitos = 12 dígitos
@@ -922,25 +952,30 @@ export class WhatsappService {
 
     const wppId = (message.key?.id as string | undefined) ?? null;
 
+    // Mensagens vindas de "Click-to-WhatsApp ads" (Instagram/Facebook),
+    // ephemeral (desaparecem), view-once, editadas etc. chegam aninhadas
+    // dentro de wrappers. Sem unwrap, o texto real fica invisivel.
+    const innerMessage = this.unwrapMessageContent(message.message);
+
     // Extracao de texto cobre os tipos mais comuns: mensagem de texto,
-    // texto estendido (com link preview), respostas de botoes e listas,
-    // e captions de midia. Sem isso, qualquer mensagem que nao seja texto
-    // puro era silenciosamente ignorada.
+    // texto estendido (com link preview e/ou contextInfo de anuncio),
+    // respostas de botoes e listas, e captions de midia.
     const messageText =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      message.message?.imageMessage?.caption ||
-      message.message?.videoMessage?.caption ||
-      message.message?.documentMessage?.caption ||
-      message.message?.buttonsResponseMessage?.selectedDisplayText ||
-      message.message?.listResponseMessage?.title ||
-      message.message?.templateButtonReplyMessage?.selectedDisplayText ||
+      innerMessage?.conversation ||
+      innerMessage?.extendedTextMessage?.text ||
+      innerMessage?.imageMessage?.caption ||
+      innerMessage?.videoMessage?.caption ||
+      innerMessage?.documentMessage?.caption ||
+      innerMessage?.buttonsResponseMessage?.selectedDisplayText ||
+      innerMessage?.listResponseMessage?.title ||
+      innerMessage?.templateButtonReplyMessage?.selectedDisplayText ||
       null;
 
     if (!messageText || messageText.trim() === '') {
-      const messageType = Object.keys(message.message ?? {})[0] ?? 'unknown';
+      const outerType = Object.keys(message.message ?? {})[0] ?? 'unknown';
+      const innerType = Object.keys(innerMessage ?? {})[0] ?? 'unknown';
       this.logger.warn(
-        `Mensagem sem texto extraivel ignorada (tipo: ${messageType}, wppId: ${wppId}, userId: ${userId})`,
+        `Mensagem sem texto extraivel ignorada (outer: ${outerType}, inner: ${innerType}, wppId: ${wppId}, userId: ${userId})`,
       );
       return;
     }
