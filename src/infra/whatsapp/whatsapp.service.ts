@@ -986,9 +986,17 @@ export class WhatsappService {
       null;
 
     if (!messageText || messageText.trim() === '') {
-      // Loga o caminho completo (apenas chaves, sem conteudo) para
-      // diagnosticar wrappers desconhecidos sem vazar texto da mensagem.
       const shape = this.describeMessageShape(message.message);
+      if (!shape) {
+        // Sem nenhuma chave em message.message — tipicamente sinal de que
+        // o Baileys nao conseguiu decifrar a mensagem (Bad MAC). Lead
+        // provavelmente reenvia ou a proxima mensagem reabre a sessao
+        // Signal. Nada a fazer no nosso lado.
+        this.logger.warn(
+          `Mensagem perdida por falha cripto (Bad MAC ou sessao Signal dessincronizada; wppId: ${wppId}, userId: ${userId})`,
+        );
+        return;
+      }
       this.logger.warn(
         `Mensagem sem texto extraivel ignorada (shape: ${shape}, wppId: ${wppId}, userId: ${userId})`,
       );

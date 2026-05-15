@@ -37,8 +37,50 @@ function assertNotPointingToProd() {
   }
 }
 
+/**
+ * Suprime logs verbosos da libsignal e do Baileys que sao acionados
+ * via console.log/console.error direto (sem passar pelo logger Nest).
+ *
+ * Sao normais e nao acionaveis:
+ * - "Closing session: ..." / "Removing old closed session: ..." —
+ *   rotacao de chaves do Signal protocol durante decrypt normal.
+ * - "Session error: Bad MAC" / "Failed to decrypt message with any known
+ *   session" — sessao Signal dessincronizada (lead reinstalou app,
+ *   mensagem fora de ordem, bot ficou offline). Acontece em ~1-3% das
+ *   mensagens em qualquer bot Baileys.
+ */
+function silenceLibsignalNoise() {
+  const SUPPRESS = [
+    /^Closing session:/,
+    /^Removing old closed session:/,
+    /^Session error:/,
+    /^Failed to decrypt message with any known session/,
+    /^\s+at .+libsignal/,
+    /^\s+at .+@whiskeysockets/,
+    /^\s+at SessionCipher\./,
+    /^\s+at Object\.verifyMAC/,
+    /^\s+at _asyncQueueExecutor/,
+    /^\s+at async _asyncQueueExecutor/,
+    /^\s+at async \d+_[\d.]+/,
+    /^\s+at async SessionCipher/,
+  ];
+  const matches = (arg: unknown) =>
+    typeof arg === 'string' && SUPPRESS.some((re) => re.test(arg));
+  const origLog = console.log.bind(console);
+  const origError = console.error.bind(console);
+  console.log = (...args: unknown[]) => {
+    if (args.length > 0 && matches(args[0])) return;
+    origLog(...args);
+  };
+  console.error = (...args: unknown[]) => {
+    if (args.length > 0 && matches(args[0])) return;
+    origError(...args);
+  };
+}
+
 async function bootstrap() {
   assertNotPointingToProd();
+  silenceLibsignalNoise();
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
