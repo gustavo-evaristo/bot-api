@@ -921,19 +921,40 @@ export class WhatsappService {
     if (message.key?.fromMe) return;
 
     const wppId = (message.key?.id as string | undefined) ?? null;
+
+    // Extracao de texto cobre os tipos mais comuns: mensagem de texto,
+    // texto estendido (com link preview), respostas de botoes e listas,
+    // e captions de midia. Sem isso, qualquer mensagem que nao seja texto
+    // puro era silenciosamente ignorada.
+    const messageText =
+      message.message?.conversation ||
+      message.message?.extendedTextMessage?.text ||
+      message.message?.imageMessage?.caption ||
+      message.message?.videoMessage?.caption ||
+      message.message?.documentMessage?.caption ||
+      message.message?.buttonsResponseMessage?.selectedDisplayText ||
+      message.message?.listResponseMessage?.title ||
+      message.message?.templateButtonReplyMessage?.selectedDisplayText ||
+      null;
+
+    if (!messageText || messageText.trim() === '') {
+      const messageType = Object.keys(message.message ?? {})[0] ?? 'unknown';
+      this.logger.warn(
+        `Mensagem sem texto extraivel ignorada (tipo: ${messageType}, wppId: ${wppId}, userId: ${userId})`,
+      );
+      return;
+    }
+
+    // Dedup so DEPOIS de confirmar que ha texto pra processar. Marcar antes
+    // fazia mensagens com midia/audio "queimarem" o wppId no cache, e a
+    // proxima reentrega do Baileys (com TEXTO valido, supostamente, ou nao)
+    // era descartada como duplicada — bot nunca via a mensagem.
     if (this.isDuplicateIncomingMessage(wppId)) {
       this.logger.log(
         `Mensagem duplicada ignorada (whatsappMessageId: ${wppId}, userId: ${userId})`,
       );
       return;
     }
-
-    const messageText =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      null;
-
-    if (!messageText || messageText.trim() === '') return;
 
     // Resolve phone number: @lid JIDs use an internal ID, not the real phone.
     // Baileys provides the real JID in key.remoteJidAlt when addressingMode === "lid".
