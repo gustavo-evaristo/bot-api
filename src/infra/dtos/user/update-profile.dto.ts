@@ -27,19 +27,4 @@ export class UpdateProfileDTO {
   @IsString()
   @ApiPropertyOptional({ example: 'Minha Empresa' })
   companyName?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional()
-  currentPassword?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional()
-  newPassword?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional()
-  confirmPassword?: string;
 }

@@ -12,6 +12,7 @@ export * from './user/create-user.use-case';
 export * from './user/get-profile.use-case';
 export * from './user/login.use-case';
 export * from './user/update-profile.use-case';
+export * from './user/change-password.use-case';
 export * from './flow-node/create-node.use-case';
 export * from './flow-node/update-node.use-case';
 export * from './flow-node/delete-node.use-case';

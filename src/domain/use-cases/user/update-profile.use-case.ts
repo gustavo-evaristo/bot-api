@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UserEntity } from '../../entities/user.entity';
 import { CompanyEntity } from '../../entities/company.entity';
-import { Password } from '../../entities/vos';
 import { IUserRepository } from '../../repositories/user.repository';
 import { ICompanyRepository } from '../../repositories/company.repository';
 
@@ -12,9 +11,6 @@ interface Input {
   phone?: string;
   avatarUrl?: string | null;
   companyName?: string;
-  currentPassword?: string;
-  newPassword?: string;
-  confirmPassword?: string;
 }
 
 interface Output {
@@ -59,22 +55,6 @@ export class UpdateProfileUseCase {
       phone: input.phone,
       avatarUrl: input.avatarUrl,
     });
-
-    if (input.newPassword || input.confirmPassword || input.currentPassword) {
-      if (!input.currentPassword) {
-        throw new Error('Senha atual é obrigatória para alterar a senha');
-      }
-      if (!input.newPassword || !input.confirmPassword) {
-        throw new Error('Informe a nova senha e a confirmação');
-      }
-      const currentPasswordVO = Password.create(input.currentPassword);
-      const isValid = currentPasswordVO.compareWithHash(user.password.value);
-      if (!isValid) {
-        throw new Error('Senha atual incorreta');
-      }
-      Password.createWithConfirmation(input.newPassword, input.confirmPassword);
-      user.changePassword(input.newPassword);
-    }
 
     await this.userRepository.update(user);
 
