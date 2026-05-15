@@ -44,6 +44,12 @@ export class WhatsappService {
     { jid: string; cachedAt: number }
   >();
   private readonly JID_CACHE_TTL_MS = 15 * 60 * 1000;
+  // Dedup de mensagens entrantes: Baileys reentrega o mesmo messages.upsert
+  // apos reconexao, o que dispara P2002 (UNIQUE em whatsappMessageId) e,
+  // pior, faz o bot responder 2x ao mesmo lead. Cache em memoria suficiente
+  // — a reentrega ocorre em janela curta (segundos a minutos).
+  private readonly processedMessageIds = new Map<string, number>();
+  private readonly MESSAGE_DEDUP_TTL_MS = 10 * 60 * 1000;
 
   private getLeadMutex(botPhone: string, leadPhone: string): Mutex {
     const key = `${botPhone}::${leadPhone}`;
@@ -60,6 +66,29 @@ export class WhatsappService {
     for (const [k, mu] of this.leadMutexes) {
       if (!mu.isLocked()) this.leadMutexes.delete(k);
     }
+  }
+
+  /**
+   * Retorna true se ja processamos esta whatsappMessageId nos ultimos
+   * MESSAGE_DEDUP_TTL_MS. Marca como processada na primeira chamada.
+   * Aproveita pra GC entradas expiradas (cheap, O(n) so quando map cresce).
+   */
+  private isDuplicateIncomingMessage(wppId: string | null): boolean {
+    if (!wppId) return false;
+    const now = Date.now();
+    const existing = this.processedMessageIds.get(wppId);
+    if (existing && now - existing < this.MESSAGE_DEDUP_TTL_MS) {
+      return true;
+    }
+    this.processedMessageIds.set(wppId, now);
+    if (this.processedMessageIds.size > 5000) {
+      for (const [k, ts] of this.processedMessageIds) {
+        if (now - ts >= this.MESSAGE_DEDUP_TTL_MS) {
+          this.processedMessageIds.delete(k);
+        }
+      }
+    }
+    return false;
   }
 
   constructor(
@@ -882,6 +911,14 @@ export class WhatsappService {
     )
       return;
     if (message.key?.fromMe) return;
+
+    const wppId = (message.key?.id as string | undefined) ?? null;
+    if (this.isDuplicateIncomingMessage(wppId)) {
+      this.logger.log(
+        `Mensagem duplicada ignorada (whatsappMessageId: ${wppId}, userId: ${userId})`,
+      );
+      return;
+    }
 
     const messageText =
       message.message?.conversation ||
