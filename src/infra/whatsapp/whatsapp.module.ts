@@ -6,7 +6,6 @@ import { WhatsappController } from './whatsapp.controller';
 import { DatabaseModule } from 'src/infra/database/database.module';
 import { ProcessMessageUseCase } from 'src/domain/use-cases/flow-engine/process-message.use-case';
 import { AuthenticationModule } from '../authentication/authentication.module';
-import { FollowUpService } from './follow-up.service';
 import { LeaderElectionService } from './leader-election.service';
 import { OutboundWorkerService } from './outbound-worker.service';
 import { IWhatsappStatusRepository } from 'src/domain/repositories/whatsapp-status.repository';
@@ -24,7 +23,6 @@ import { RedisModule } from '../redis/redis.module';
     WhatsappService,
     WhatsappGateway,
     ProcessMessageUseCase,
-    FollowUpService,
     LeaderElectionService,
     OutboundWorkerService,
     {
