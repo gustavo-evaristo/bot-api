@@ -31,6 +31,7 @@
     "@nestjs/websockets": "^11.1.19",
     "@prisma/adapter-pg": "^7.8.0",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@supabase/supabase-js": "^2.105.4",
     "@whiskeysockets/baileys": "7.0.0-rc10",
     "async-mutex": "^0.5.0",
     "bcrypt": "^6.0.0",

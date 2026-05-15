@@ -10,6 +10,8 @@ export interface NewMessagePayload {
   createdAt: Date;
   whatsappMessageId?: string | null;
   status?: string;
+  mediaUrl?: string | null;
+  mediaType?: 'image' | null;
 }
 
 export interface MessageStatusPayload {

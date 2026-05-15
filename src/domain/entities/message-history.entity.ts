@@ -13,6 +13,8 @@ export enum MessageStatus {
   FAILED = 'FAILED',
 }
 
+export type MediaType = 'image';
+
 type MessageHistoryEntityProps = {
   id?: string | UUID | null;
   conversationId: string | UUID;
@@ -22,6 +24,8 @@ type MessageHistoryEntityProps = {
   status?: MessageStatus | null;
   statusUpdatedAt?: Date | null;
   createdAt?: Date | null;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
 };
 
 export class MessageHistoryEntity {
@@ -33,6 +37,8 @@ export class MessageHistoryEntity {
   status: MessageStatus;
   statusUpdatedAt: Date | null;
   createdAt: Date;
+  mediaUrl: string | null;
+  mediaType: MediaType | null;
 
   constructor(props: MessageHistoryEntityProps) {
     if (props.id instanceof UUID) {
@@ -55,5 +61,7 @@ export class MessageHistoryEntity {
     this.status = props.status ?? MessageStatus.SENT;
     this.statusUpdatedAt = props.statusUpdatedAt ?? null;
     this.createdAt = props.createdAt ?? new Date();
+    this.mediaUrl = props.mediaUrl ?? null;
+    this.mediaType = props.mediaType ?? null;
   }
 }

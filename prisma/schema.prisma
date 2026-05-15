@@ -124,6 +124,8 @@ model message_history {
   status            String        @default("SENT")
   statusUpdatedAt   DateTime?
   createdAt         DateTime      @default(now())
+  mediaUrl          String?
+  mediaType         String?
 
   @@index([whatsappMessageId])
 }

@@ -4,6 +4,7 @@ import {
   UpdateStatusResult,
 } from 'src/domain/repositories/message-history.repository';
 import {
+  MediaType,
   MessageHistoryEntity,
   MessageSender,
   MessageStatus,
@@ -26,6 +27,8 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
         status: message.status,
         statusUpdatedAt: message.statusUpdatedAt,
         createdAt: message.createdAt,
+        mediaUrl: message.mediaUrl,
+        mediaType: message.mediaType,
       },
     });
   }
@@ -104,6 +107,8 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
     status: string;
     statusUpdatedAt: Date | null;
     createdAt: Date;
+    mediaUrl?: string | null;
+    mediaType?: string | null;
   }): MessageHistoryEntity {
     return new MessageHistoryEntity({
       id: UUID.from(r.id),
@@ -114,6 +119,8 @@ export class MessageHistoryRepository implements IMessageHistoryRepository {
       status: r.status as MessageStatus,
       statusUpdatedAt: r.statusUpdatedAt,
       createdAt: r.createdAt,
+      mediaUrl: r.mediaUrl ?? null,
+      mediaType: (r.mediaType as MediaType | null) ?? null,
     });
   }
 

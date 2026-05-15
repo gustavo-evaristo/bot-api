@@ -26,6 +26,7 @@ import {
   AcquiredLock,
   RedisLockService,
 } from '../redis/redis-lock.service';
+import { MediaStorageService } from '../storage/media-storage.service';
 
 const RECONNECT_BATCH_SIZE = 10;
 const SESSION_LOCK_TTL_MS = 30_000;
@@ -103,7 +104,43 @@ export class WhatsappService {
     private readonly outboundRepository: IPendingOutboundMessageRepository,
     private readonly redisLock: RedisLockService,
     @Inject(REDIS_PUB) private readonly redis: Redis | null,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
+
+  /**
+   * Se a mensagem for uma imagem, baixa via Baileys e sobe pro Storage.
+   * Retorna a URL publica, ou null se nao for imagem, falhar download
+   * ou exceder limite de tamanho.
+   */
+  private async maybeUploadIncomingImage(
+    userId: string,
+    message: any,
+    innerMessage: any,
+    wppId: string | null,
+  ): Promise<string | null> {
+    const imageMsg = innerMessage?.imageMessage;
+    if (!imageMsg) return null;
+    if (!this.mediaStorage.isEnabled()) return null;
+    try {
+      const baileys = await loadBaileys();
+      const buffer = (await baileys.downloadMediaMessage(
+        message,
+        'buffer',
+        {},
+      )) as Buffer;
+      const mimeType = imageMsg.mimetype || 'image/jpeg';
+      const ext = mimeType.split('/')[1]?.split(';')[0] || 'jpg';
+      const path = `${userId}/${wppId ?? Date.now()}.${ext}`;
+      return await this.mediaStorage.uploadImage(buffer, path, mimeType);
+    } catch (err) {
+      this.logger.warn(
+        `Falha ao baixar/upload imagem (wppId: ${wppId}, userId: ${userId}): ${
+          (err as Error).message
+        }`,
+      );
+      return null;
+    }
+  }
 
   private startLockRenewal(userId: string, lock: AcquiredLock): void {
     const existing = this.lockRenewers.get(userId);
@@ -980,7 +1017,8 @@ export class WhatsappService {
     //   2 formatos comuns: hydratedTemplate (renderizado) e fourRowTemplate
     // - interactiveMessage: mensagem interativa com body text
     // - reactionMessage: emoji de reacao (lead reage com 👍 em vez de texto)
-    const messageText =
+    const isImage = !!innerMessage?.imageMessage;
+    const rawText =
       innerMessage?.conversation ||
       innerMessage?.extendedTextMessage?.text ||
       innerMessage?.imageMessage?.caption ||
@@ -996,6 +1034,11 @@ export class WhatsappService {
       innerMessage?.interactiveMessage?.body?.text ||
       innerMessage?.reactionMessage?.text ||
       null;
+
+    // Imagem com caption: caption vira o texto (flow roda normal).
+    // Imagem sem caption: usa "[Imagem]" como placeholder pro flow saber
+    // que recebeu algo e responder seu fallback (ou ignorar conforme node).
+    const messageText = isImage ? rawText || '[Imagem]' : rawText;
 
     if (!messageText || messageText.trim() === '') {
       const shape = this.describeMessageShape(message.message);
@@ -1043,8 +1086,18 @@ export class WhatsappService {
       : '';
     const leadName = message.pushName || null;
 
+    // Se for imagem, baixa e sobe pro Storage em paralelo com a logica do
+    // flow. Nao bloqueia o processamento — se falhar, mensagem entra so
+    // como texto.
+    const mediaUrl = isImage
+      ? await this.maybeUploadIncomingImage(userId, message, innerMessage, wppId)
+      : null;
+    const mediaType: 'image' | null = isImage && mediaUrl ? 'image' : null;
+
     this.logger.log(
-      `Mensagem recebida — bot: ${botPhoneNumber} | lead: ${leadPhoneNumber} | texto: "${messageText}"`,
+      `Mensagem recebida — bot: ${botPhoneNumber} | lead: ${leadPhoneNumber} | texto: "${messageText}"${
+        mediaUrl ? ` | midia: image` : ''
+      }`,
     );
 
     const mutex = this.getLeadMutex(botPhoneNumber, leadPhoneNumber);
@@ -1076,6 +1129,8 @@ export class WhatsappService {
             content: messageText,
             whatsappMessageId: incomingWppId,
             status: MessageStatus.DELIVERED,
+            mediaUrl,
+            mediaType,
           }),
         );
 
@@ -1086,6 +1141,8 @@ export class WhatsappService {
           createdAt: new Date(),
           whatsappMessageId: incomingWppId,
           status: 'DELIVERED',
+          mediaUrl,
+          mediaType,
         });
       }
 
