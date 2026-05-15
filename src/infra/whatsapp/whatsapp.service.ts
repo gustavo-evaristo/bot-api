@@ -409,6 +409,12 @@ export class WhatsappService {
         auth: authState.state,
         printQRInTerminal: false,
         logger: noopLogger as any,
+        // Identifica o linked device como "ConsigPro Bot" no celular do
+        // cliente em vez do default "Google Chrome (macOS)". Aplica so a
+        // sessoes pareadas a partir daqui — sessoes ja pareadas mantem
+        // a identidade antiga ate fazerem novo QR scan (mudar agora
+        // invalidaria as creds e forcaria re-pareamento de todos).
+        browser: ['ConsigPro Bot', 'Chrome', '1.0.0'],
       });
 
       this.sessions.set(userId, sock);
