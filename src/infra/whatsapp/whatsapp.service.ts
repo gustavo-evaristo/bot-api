@@ -18,7 +18,10 @@ import { IWhatsAppSessionRepository } from 'src/domain/repositories/whatsapp-ses
 import { IFlowRepository } from 'src/domain/repositories/flow.repository';
 import { IPendingOutboundMessageRepository } from 'src/domain/repositories/pending-outbound-message.repository';
 import { loadBaileys } from './baileys.loader';
-import { useWhatsAppAuthState } from './whatsapp-auth-state';
+import {
+  invalidateAuthCache,
+  useWhatsAppAuthState,
+} from './whatsapp-auth-state';
 import {
   AcquiredLock,
   RedisLockService,
@@ -531,6 +534,7 @@ export class WhatsappService {
               `[BAILEYS-CONN] LOGOUT detectado — sessão removida (numero: ${numeroAfetado}, userId: ${userId})`,
             );
             await this.sessionRepository.delete(userId);
+            await invalidateAuthCache(userId, this.redis);
             this.stores.delete(userId);
             await this.releaseSessionLock(userId);
           } else if (
@@ -688,6 +692,10 @@ export class WhatsappService {
       .catch((err) =>
         this.logger.error(`Falha ao remover sessão ${userId}:`, err),
       );
+
+    // Invalidar cache Redis senao o proximo useWhatsAppAuthState le creds
+    // antigas e o Baileys reconecta como o numero anterior em vez de gerar QR.
+    await invalidateAuthCache(userId, this.redis);
 
     if (previousPhone) {
       await this.flowRepository

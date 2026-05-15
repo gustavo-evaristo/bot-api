@@ -16,6 +16,24 @@ interface CachedAuthBlob {
 }
 
 /**
+ * Apaga o cache Redis de auth state para este userId. Necessario sempre
+ * que o Postgres for limpo (forceResetSession, logout), senao o proximo
+ * startSession le do cache as creds antigas — o que impede a geracao
+ * do QR para um numero novo.
+ */
+export async function invalidateAuthCache(
+  userId: string,
+  redis: Redis | null,
+): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.del(cacheKey(userId));
+  } catch {
+    // Falha do Redis nao deve quebrar o reset — o Postgres ja foi limpo.
+  }
+}
+
+/**
  * Lê o blob de auth do Redis (hot cache); cai para Postgres se Redis
  * estiver indisponível ou cache vazio.
  *
