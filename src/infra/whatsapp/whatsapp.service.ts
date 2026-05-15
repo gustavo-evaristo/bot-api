@@ -971,9 +971,15 @@ export class WhatsappService {
     // dentro de wrappers. Sem unwrap, o texto real fica invisivel.
     const innerMessage = this.unwrapMessageContent(message.message);
 
-    // Extracao de texto cobre os tipos mais comuns: mensagem de texto,
-    // texto estendido (com link preview e/ou contextInfo de anuncio),
-    // respostas de botoes e listas, e captions de midia.
+    // Extracao de texto cobre os tipos mais comuns:
+    // - conversation / extendedTextMessage: textos simples e com preview
+    // - captions de midia: foto, video, documento
+    // - respostas de botoes/listas/templates
+    // - templateMessage: chega quando o lead veio via outra plataforma
+    //   (WhatsApp Business API, anuncios CTWA com template, bots terceiros)
+    //   2 formatos comuns: hydratedTemplate (renderizado) e fourRowTemplate
+    // - interactiveMessage: mensagem interativa com body text
+    // - reactionMessage: emoji de reacao (lead reage com 👍 em vez de texto)
     const messageText =
       innerMessage?.conversation ||
       innerMessage?.extendedTextMessage?.text ||
@@ -983,6 +989,12 @@ export class WhatsappService {
       innerMessage?.buttonsResponseMessage?.selectedDisplayText ||
       innerMessage?.listResponseMessage?.title ||
       innerMessage?.templateButtonReplyMessage?.selectedDisplayText ||
+      innerMessage?.templateMessage?.hydratedTemplate?.hydratedContentText ||
+      innerMessage?.templateMessage?.fourRowTemplate?.content?.conversation ||
+      innerMessage?.templateMessage?.fourRowTemplate?.content?.extendedTextMessage
+        ?.text ||
+      innerMessage?.interactiveMessage?.body?.text ||
+      innerMessage?.reactionMessage?.text ||
       null;
 
     if (!messageText || messageText.trim() === '') {
