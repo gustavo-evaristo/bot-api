@@ -32,12 +32,37 @@ export class ConversationRepository implements IConversationRepository {
   }
 
   async delete(id: string): Promise<void> {
+    // Hard-delete cascata por (flowId, leadPhoneNumber). Apagar so a conversa
+    // atual nao bastava: o GetConversationUseCase une mensagens de TODAS as
+    // conversas anteriores do mesmo lead/flow (findIdsByLeadAndKanban), entao
+    // historico de conversas FINISHED antigas reaparecia quando o lead voltava
+    // 48h depois. Aqui apagamos tudo relacionado: o lead "renasce" do zero.
     await this.prismaService.$transaction(async (tx) => {
-      await tx.message_history.deleteMany({ where: { conversationId: id } });
-      await tx.conversations.update({
+      const conv = await tx.conversations.findUnique({
         where: { id },
-        data: { isDeleted: true, updatedAt: new Date() },
+        select: { flowId: true, leadPhoneNumber: true },
       });
+      if (!conv) return;
+
+      const allConvIds = (
+        await tx.conversations.findMany({
+          where: {
+            flowId: conv.flowId,
+            leadPhoneNumber: conv.leadPhoneNumber,
+          },
+          select: { id: true },
+        })
+      ).map((c) => c.id);
+
+      if (allConvIds.length === 0) return;
+
+      const whereIn = { conversationId: { in: allConvIds } };
+
+      await tx.message_history.deleteMany({ where: whereIn });
+      await tx.conversation_progress.deleteMany({ where: whereIn });
+      await tx.lead_responses.deleteMany({ where: whereIn });
+      await tx.pending_outbound_message.deleteMany({ where: whereIn });
+      await tx.conversations.deleteMany({ where: { id: { in: allConvIds } } });
     });
   }
 
