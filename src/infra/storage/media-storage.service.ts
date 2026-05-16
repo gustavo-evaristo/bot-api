@@ -1,44 +1,49 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
-import {
-  SUPABASE_STORAGE_BUCKET,
-  SUPABASE_STORAGE_CLIENT,
-} from './storage.constants';
+import { ConfigService } from '@nestjs/config';
+import { SUPABASE_STORAGE_BUCKET } from './storage.constants';
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Upload via REST API do Storage do Supabase usando fetch nativo.
+ *
+ * A versao anterior usava @supabase/supabase-js, que tenta validar a
+ * service_role key como JWT antes de fazer a request e falha com
+ * "Invalid Compact JWS" quando a key eh do formato novo (sb_secret_*).
+ * REST API direta funciona com qualquer formato — sem dependencia
+ * externa.
+ */
 @Injectable()
 export class MediaStorageService {
   private readonly logger = new Logger(MediaStorageService.name);
+  private readonly supabaseUrl: string | null;
+  private readonly serviceRoleKey: string | null;
 
   constructor(
-    @Optional()
-    @Inject(SUPABASE_STORAGE_CLIENT)
-    private readonly supabase: SupabaseClient | null,
+    @Optional() private readonly config: ConfigService | null,
     @Inject(SUPABASE_STORAGE_BUCKET)
     private readonly bucket: string,
-  ) {}
-
-  isEnabled(): boolean {
-    return this.supabase !== null;
+  ) {
+    this.supabaseUrl = config?.get<string>('SUPABASE_URL') ?? null;
+    this.serviceRoleKey =
+      config?.get<string>('SUPABASE_SERVICE_ROLE_KEY') ?? null;
+    if (!this.supabaseUrl || !this.serviceRoleKey) {
+      this.logger.warn(
+        'SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY ausentes — Storage desabilitado',
+      );
+    }
   }
 
-  /**
-   * Sobe uma imagem para o Storage e retorna a URL publica.
-   * Retorna null se Storage nao estiver configurado, ou se a imagem
-   * exceder o limite de tamanho — UI funciona sem a imagem nesses casos.
-   */
+  isEnabled(): boolean {
+    return !!this.supabaseUrl && !!this.serviceRoleKey;
+  }
+
   async uploadImage(
     buffer: Buffer,
     path: string,
     mimeType: string,
   ): Promise<string | null> {
-    if (!this.supabase) {
-      this.logger.warn(
-        'Supabase Storage nao configurado — imagem nao sera persistida',
-      );
-      return null;
-    }
+    if (!this.isEnabled()) return null;
     if (buffer.byteLength > MAX_IMAGE_BYTES) {
       this.logger.warn(
         `Imagem excede ${MAX_IMAGE_BYTES} bytes (${buffer.byteLength}) — ignorada`,
@@ -46,19 +51,38 @@ export class MediaStorageService {
       return null;
     }
 
-    const { error } = await this.supabase.storage
-      .from(this.bucket)
-      .upload(path, buffer, {
-        contentType: mimeType,
-        upsert: false,
+    const encodedPath = path
+      .split('/')
+      .map(encodeURIComponent)
+      .join('/');
+    const url = `${this.supabaseUrl}/storage/v1/object/${this.bucket}/${encodedPath}`;
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.serviceRoleKey}`,
+          apikey: this.serviceRoleKey!,
+          'Content-Type': mimeType,
+          'x-upsert': 'false',
+        },
+        body: buffer as any,
       });
 
-    if (error) {
-      this.logger.error(`Falha ao subir imagem (${path}):`, error.message);
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        this.logger.error(
+          `Falha ao subir imagem (${path}): ${resp.status} ${text}`,
+        );
+        return null;
+      }
+
+      return `${this.supabaseUrl}/storage/v1/object/public/${this.bucket}/${encodedPath}`;
+    } catch (err) {
+      this.logger.error(
+        `Erro de rede ao subir imagem (${path}): ${(err as Error).message}`,
+      );
       return null;
     }
-
-    const { data } = this.supabase.storage.from(this.bucket).getPublicUrl(path);
-    return data.publicUrl;
   }
 }
