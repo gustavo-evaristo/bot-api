@@ -27,6 +27,8 @@ import {
   RedisLockService,
 } from '../redis/redis-lock.service';
 import { MediaStorageService } from '../storage/media-storage.service';
+import { WaJobProducerService } from '../wa-bridge/wa-job-producer.service';
+import { isWaWorkerEnabled } from '../wa-bridge/wa-bridge.constants';
 
 const RECONNECT_BATCH_SIZE = 10;
 const SESSION_LOCK_TTL_MS = 30_000;
@@ -105,6 +107,7 @@ export class WhatsappService {
     private readonly redisLock: RedisLockService,
     @Inject(REDIS_PUB) private readonly redis: Redis | null,
     private readonly mediaStorage: MediaStorageService,
+    private readonly waJobs: WaJobProducerService,
   ) {}
 
   /**
@@ -820,6 +823,26 @@ export class WhatsappService {
     content: string,
     conversationId: string,
   ): Promise<{ whatsappMessageId: string | null }> {
+    // Modo proxy: enfileira job no BullMQ e aguarda o wa-worker enviar.
+    // O socket Baileys nao existe mais aqui — quem segura eh o wa-worker.
+    if (isWaWorkerEnabled()) {
+      const { whatsappMessageId } = await this.waJobs.sendMessageAndWait({
+        userId,
+        leadPhoneNumber,
+        content,
+        correlationId: conversationId,
+      });
+      this.gateway.sendNewMessage(userId, {
+        conversationId,
+        sender: 'BOT',
+        content,
+        createdAt: new Date(),
+        whatsappMessageId,
+        status: 'SENT',
+      });
+      return { whatsappMessageId };
+    }
+
     const sock = await this.waitForActiveSession(userId, 15_000);
     if (!sock) {
       throw new Error(
@@ -847,6 +870,15 @@ export class WhatsappService {
     userId: string,
     keys: Array<{ id: string; remoteJid: string; fromMe?: boolean }>,
   ): Promise<void> {
+    if (keys.length === 0) return;
+
+    // Modo proxy: enfileira fire-and-forget. Read receipt nao precisa
+    // de resposta imediata e o frontend ja atualizou otimisticamente.
+    if (isWaWorkerEnabled()) {
+      await this.waJobs.markAsRead({ userId, keys });
+      return;
+    }
+
     const sock = await this.waitForActiveSession(userId, 5_000);
     if (!sock) {
       this.logger.warn(
@@ -854,7 +886,6 @@ export class WhatsappService {
       );
       return;
     }
-    if (keys.length === 0) return;
 
     // Resolve JID canônico para cada key — `remoteJid` recebido pode estar
     // no formato com 9 (normalizado) e divergir do JID real do contato.
