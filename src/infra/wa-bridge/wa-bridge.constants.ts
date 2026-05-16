@@ -1,0 +1,63 @@
+// Mesmas constantes usadas pelo wa-worker. Mantenha em sincronia ao mudar.
+
+export const WA_SESSION_QUEUE = 'wa.session';
+export const WA_MESSAGE_QUEUE = 'wa.message';
+export const WA_READ_QUEUE = 'wa.read';
+
+export const WA_EVENT_QR = 'wa:event:qr';
+export const WA_EVENT_STATUS = 'wa:event:status';
+export const WA_EVENT_MESSAGE_RECEIVED = 'wa:event:message.received';
+export const WA_EVENT_MESSAGE_STATUS = 'wa:event:message.status';
+
+export interface StartSessionJobData {
+  userId: string;
+  targetPhoneNumber?: string | null;
+}
+
+export interface SendMessageJobData {
+  userId: string;
+  leadPhoneNumber: string;
+  content: string;
+  correlationId: string;
+}
+
+export interface MarkAsReadJobData {
+  userId: string;
+  keys: Array<{ id: string; remoteJid: string; fromMe?: boolean }>;
+}
+
+export interface WaQrEventPayload {
+  userId: string;
+  qrDataUrl: string;
+}
+
+export interface WaStatusEventPayload {
+  userId: string;
+  status: 'CONNECTED' | 'DISCONNECTED' | 'PENDING';
+  phone: string | null;
+}
+
+export interface WaMessageReceivedPayload {
+  userId: string;
+  whatsappMessageId: string | null;
+  botPhoneNumber: string;
+  leadPhoneNumber: string;
+  leadName: string | null;
+  text: string;
+  mediaUrl: string | null;
+  mediaType: 'image' | null;
+  receivedAt: string;
+}
+
+export interface WaMessageStatusPayload {
+  userId: string;
+  whatsappMessageId: string;
+  status: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+}
+
+export const WA_WORKER_ENABLED_KEY = 'WA_WORKER_ENABLED';
+
+export function isWaWorkerEnabled(): boolean {
+  const v = (process.env[WA_WORKER_ENABLED_KEY] ?? '').toLowerCase();
+  return v === 'true' || v === '1';
+}

@@ -8,6 +8,8 @@ import {
 } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { JwtGuard } from '../authentication/jwt.guard';
+import { WaJobProducerService } from '../wa-bridge/wa-job-producer.service';
+import { isWaWorkerEnabled } from '../wa-bridge/wa-bridge.constants';
 
 class StartWhatsappSessionDTO {
   @IsString()
@@ -19,7 +21,10 @@ class StartWhatsappSessionDTO {
 @ApiTags('WhatsApp')
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private service: WhatsappService) {}
+  constructor(
+    private service: WhatsappService,
+    private waJobs: WaJobProducerService,
+  ) {}
 
   @UseGuards(JwtGuard)
   @ApiBearerAuth()
@@ -30,7 +35,16 @@ export class WhatsappController {
     @Body() body?: StartWhatsappSessionDTO,
   ) {
     const userId = user.id;
-    this.service.startSession(userId, body?.phoneNumber ?? null);
+    // Modo proxy: enfileira job pro wa-worker. Modo local (legado):
+    // chama o WhatsappService que tem Baileys embutido.
+    if (isWaWorkerEnabled()) {
+      await this.waJobs.startSession({
+        userId,
+        targetPhoneNumber: body?.phoneNumber ?? null,
+      });
+    } else {
+      this.service.startSession(userId, body?.phoneNumber ?? null);
+    }
     return { message: 'Iniciando sessão...', userId };
   }
 }

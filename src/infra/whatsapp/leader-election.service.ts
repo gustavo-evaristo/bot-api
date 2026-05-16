@@ -8,6 +8,7 @@ import { Interval } from '@nestjs/schedule';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../database/prisma.service';
 import { WhatsappService } from './whatsapp.service';
+import { isWaWorkerEnabled } from '../wa-bridge/wa-bridge.constants';
 
 const LOCK_KEY = 'whatsapp';
 const LOCK_TTL_SECONDS = 30;
@@ -30,6 +31,12 @@ export class LeaderElectionService
   }
 
   async onModuleInit() {
+    if (isWaWorkerEnabled()) {
+      this.logger.log(
+        '[Leader] WA_WORKER_ENABLED=true — leader election desabilitado no bot-api (wa-worker assumiu).',
+      );
+      return;
+    }
     this.logger.log(`Instance ID: ${this.instanceId}`);
     const acquired = await this.tryAcquireLock();
     if (acquired) {
@@ -51,6 +58,7 @@ export class LeaderElectionService
   // Leader renews the lock every 10s. If renewal fails, steps down.
   @Interval(10_000)
   async heartbeat() {
+    if (isWaWorkerEnabled()) return;
     if (!this.leader) return;
 
     const renewed = await this.tryAcquireLock();
@@ -65,6 +73,7 @@ export class LeaderElectionService
   // Standby instances probe every 15s to take over if the leader dies.
   @Interval(15_000)
   async probe() {
+    if (isWaWorkerEnabled()) return;
     if (this.leader) return;
 
     const acquired = await this.tryAcquireLock();

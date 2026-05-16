@@ -8,10 +8,14 @@ import { AnalyticsModule } from './controllers/analytics/analytics.module';
 import { FormModule } from './controllers/form/form.module';
 import { KanbanModule } from './controllers/kanban/kanban.module';
 import { QuickReplyModule } from './controllers/quick-reply/quick-reply.module';
+import { WaBridgeModule } from './wa-bridge/wa-bridge.module';
+import { WaProducerModule } from './wa-bridge/wa-producer.module';
 
 @Module({
   imports: [
+    WaProducerModule,
     WhatsappModule,
+    WaBridgeModule,
     UserModule,
     FlowModule,
     FlowNodeModule,

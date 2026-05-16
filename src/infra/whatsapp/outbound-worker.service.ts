@@ -10,6 +10,8 @@ import {
 import { UUID } from 'src/domain/entities/vos';
 import { WhatsappService } from './whatsapp.service';
 import { LeaderElectionService } from './leader-election.service';
+import { WaJobProducerService } from '../wa-bridge/wa-job-producer.service';
+import { isWaWorkerEnabled } from '../wa-bridge/wa-bridge.constants';
 
 const BATCH_SIZE = 50;
 const MAX_ATTEMPTS = 5;
@@ -25,11 +27,14 @@ export class OutboundWorkerService {
     private readonly messageHistoryRepository: IMessageHistoryRepository,
     private readonly whatsappService: WhatsappService,
     private readonly leaderElection: LeaderElectionService,
+    private readonly waJobs: WaJobProducerService,
   ) {}
 
   @Interval(2_000)
   async tick() {
-    if (!this.leaderElection.isLeader()) return;
+    // No modo proxy, qualquer instancia do bot-api pode processar o outbound
+    // — nao depende mais da leader election (o lock granular esta no wa-worker).
+    if (!isWaWorkerEnabled() && !this.leaderElection.isLeader()) return;
     if (this.running) return;
 
     this.running = true;
@@ -63,12 +68,19 @@ export class OutboundWorkerService {
   ) {
     for (const msg of group) {
       try {
-        const { whatsappMessageId } = await this.whatsappService.sendMessage(
-          msg.userId,
-          msg.toPhoneNumber,
-          msg.content,
-          msg.conversationId,
-        );
+        const { whatsappMessageId } = isWaWorkerEnabled()
+          ? await this.waJobs.sendMessageAndWait({
+              userId: msg.userId,
+              leadPhoneNumber: msg.toPhoneNumber,
+              content: msg.content,
+              correlationId: msg.id,
+            })
+          : await this.whatsappService.sendMessage(
+              msg.userId,
+              msg.toPhoneNumber,
+              msg.content,
+              msg.conversationId,
+            );
 
         await this.outboundRepository.markSent(msg.id);
 

@@ -9,6 +9,8 @@ import { IMessageHistoryRepository } from 'src/domain/repositories/message-histo
 import { MessageStatus } from 'src/domain/entities/message-history.entity';
 import { WhatsappService } from 'src/infra/whatsapp/whatsapp.service';
 import { WhatsappGateway } from 'src/infra/whatsapp/whatsapp.gateway';
+import { WaJobProducerService } from 'src/infra/wa-bridge/wa-job-producer.service';
+import { isWaWorkerEnabled } from 'src/infra/wa-bridge/wa-bridge.constants';
 
 interface Input {
   userId: string;
@@ -24,6 +26,7 @@ export class MarkConversationAsReadUseCase {
     private readonly messageHistoryRepository: IMessageHistoryRepository,
     private readonly whatsappService: WhatsappService,
     private readonly whatsappGateway: WhatsappGateway,
+    private readonly waJobs: WaJobProducerService,
   ) {}
 
   async execute({ userId, conversationId }: Input): Promise<void> {
@@ -52,7 +55,12 @@ export class MarkConversationAsReadUseCase {
 
     if (keys.length > 0) {
       try {
-        await this.whatsappService.markAsRead(userId, keys);
+        if (isWaWorkerEnabled()) {
+          // Fire-and-forget: read receipt nao precisa de resposta imediata.
+          await this.waJobs.markAsRead({ userId, keys });
+        } else {
+          await this.whatsappService.markAsRead(userId, keys);
+        }
       } catch (err) {
         // Falha em sinalizar leitura ao WhatsApp não deve bloquear a UI local.
         this.logger.warn(

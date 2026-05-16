@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.19",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.19",
@@ -35,6 +36,7 @@
     "@whiskeysockets/baileys": "7.0.0-rc10",
     "async-mutex": "^0.5.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.76.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "date-fns": "^4.1.0",
